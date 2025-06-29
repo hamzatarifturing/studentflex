@@ -17,6 +17,20 @@ if($_SESSION["role"] !== "admin") {
 // Include database connection
 require_once "../config/db.php";
 
+// Fetch all users for display
+$users = [];
+if(!isset($error_message)) {
+    $sql = "SELECT id, username, full_name, email, role, status, created_at FROM users ORDER BY id";
+    $result = mysqli_query($conn, $sql);
+    if($result) {
+        while($row = mysqli_fetch_assoc($result)) {
+            $users[] = $row;
+        }
+    } else {
+        $users_error = "Error fetching users: " . mysqli_error($conn);
+    }
+}
+
 // Define page title
 $page_title = "Admin Dashboard";
 
@@ -83,11 +97,65 @@ include_once "../includes/header.php";
                             <div class="stat-card-body">
                                 <i class="fas fa-users stat-icon"></i>
                                 <h5>Users</h5>
-                                <p class="stat-number">1</p>
+                                <p class="stat-number"><?php echo count($users); ?></p>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Users Table Section -->
+            <div class="users-section mt-4">
+                <h4><i class="fas fa-users"></i> System Users</h4>
+                
+                <?php if(isset($users_error)): ?>
+                    <div class="alert alert-danger">
+                        <?php echo $users_error; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover users-table">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if(empty($users)): ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center">No users found in the database.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach($users as $user): ?>
+                                        <tr>
+                                            <td><?php echo $user['id']; ?></td>
+                                            <td><?php echo htmlspecialchars($user['username']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['full_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $user['role'] == 'admin' ? 'primary' : 'info'; ?>">
+                                                    <?php echo ucfirst(htmlspecialchars($user['role'])); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $user['status'] == 'active' ? 'success' : 'secondary'; ?>">
+                                                    <?php echo ucfirst(htmlspecialchars($user['status'])); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="quick-actions mt-4">
