@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Check if user is logged in as admin
-if(!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+if(!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
@@ -77,13 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         
         // Set default values
-        $role = 'teacher';
+        $role = 'student'; // Using student role since the schema only allows 'admin' or 'student'
         $status = 'active';
-        $created_at = date('Y-m-d H:i:s');
         
         // Prepare and execute the insert query
-        $stmt = $conn->prepare("INSERT INTO users (username, password, full_name, email, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssss", $username, $hashed_password, $full_name, $email, $role, $status, $created_at);
+        $stmt = $conn->prepare("INSERT INTO users (username, password, full_name, email, role, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $username, $hashed_password, $full_name, $email, $role, $status);
         
         if($stmt->execute()) {
             // Success
@@ -110,329 +109,194 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>
-Add Teacher - StudentFlex
-
-</title>
-<link rel="stylesheet" href="../assets/css/styles.css">
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-<style>
-    .alert {
-        padding: 15px;
-        margin-bottom: 20px;
-        border: 1px solid transparent;
-        border-radius: 4px;
-    }
-    
-    .alert-success {
-        color: #155724;
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-    }
-    
-    .alert-error {
-        color: #721c24;
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
-    }
-    
-    .form-group {
-        margin-bottom: 15px;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 500;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        font-size: 16px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    
-    .form-control:focus {
-        border-color: #3498db;
-        outline: none;
-    }
-    
-    .btn-primary {
-        background-color: #3498db;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        font-size: 16px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    
-    .btn-primary:hover {
-        background-color: #2980b9;
-    }
-    
-    .required {
-        color: red;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Teacher - StudentFlex</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .form-control:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .required {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-<header>
-<div>
-        <div class="logo">
-<i class="fas fa-graduation-cap"></i>
-
-StudentFlex
-
-</div>
-<nav>
-<ul>
-<li>
-<a>
-<i class="fas fa-tachometer-alt"></i>
-
-Dashboard
-
-</a>
-</li>
-<li>
-<a>
-<i class="fas fa-user-graduate"></i>
-
-Students
-
-</a>
-</li>
-<li>
-<a>
-<i class="fas fa-chalkboard-teacher"></i>
-
-Teachers
-
-</a>
-</li>
-<li>
-<a>
-<i class="fas fa-clipboard-list"></i>
-
-Results
-
-</a>
-</li>
-<li>
-<a>
-<i class="fas fa-cog"></i>
-
-Settings
-
-</a>
-</li>
-</ul>
-</nav>
-<div>
-<a>
-<i class="fas fa-sign-out-alt"></i>
-
-Logout
-
-</a>
-</div>
-        <!-- Mobile menu toggle -->
-<div>
-<i class="fas fa-bars"></i>
-
-</div>
-    </div>
-</header>
-<main>
-<div>
-<h2>
-<i class="fas fa-user-plus"></i>
-
-Add New Teacher
-
-</h2>
-        <?php if(!empty($message)): ?>
-            <div class="alert alert-<?php echo $message_type; ?>">
-                <?php echo $message; ?>
-</div>
-        <?php endif; ?>
-<form>
-">
-
-<div>
-<label>
-Username
-
-<span>
-</span>
-</label>
-                <input type="text" id="username" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" required>
-</div>
-<div>
-<label>
-Password
-
-<span>
-</span>
-</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-</div>
-<div>
-<label>
-Confirm Password
-
-<span>
-</span>
-</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
-</div>
-<div>
-<label>
-Full Name
-
-<span>
-</span>
-</label>
-                <input type="text" id="full_name" name="full_name" class="form-control" value="<?php echo htmlspecialchars($full_name); ?>" required>
-</div>
-<div>
-<label>
-Email
-
-<span>
-</span>
-</label>
-                <input type="email" id="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>" required>
-</div>
-<div>
-<button>
-<i class="fas fa-save"></i>
-
-Add Teacher
-
-</button>
-</div>
-</form>
-    </div>
-</main>
-<footer>
-<div>
-        <div class="footer-section about">
-<h3>
-About StudentFlex
-
-</h3>
-<p>
-StudentFlex is a comprehensive student result management system designed to simplify academic record keeping for educational institutions.
-
-</p>
-</div>
-<div>
-<h3>
-Quick Links
-
-</h3>
-<ul>
-<li>
-<a>
-Home
-
-</a>
-</li>
-<li>
-<a>
-About
-
-</a>
-</li>
-<li>
-<a>
-Contact
-
-</a>
-</li>
-<li>
-<a>
-Privacy Policy
-
-</a>
-</li>
-</ul>
-</div>
-<div>
-<h3>
-Contact Us
-
-</h3>
-<p>
-<i class="fas fa-map-marker-alt"></i>
-
-123 Education St, Academic City
-
-</p>
-<p>
-<i class="fas fa-phone"></i>
-
-(123) 456-7890
-
-</p>
-<p>
-<i class="fas fa-envelope"></i>
-
-info@studentflex.com
-
-</p>
-            <div class="social-icons">
-<a>
-<i class="fab fa-facebook"></i>
-
-</a>
-<a>
-<i class="fab fa-twitter"></i>
-
-</a>
-<a>
-<i class="fab fa-instagram"></i>
-
-</a>
-<a>
-<i class="fab fa-linkedin"></i>
-
-</a>
-</div>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i> StudentFlex
+            </div>
+            <nav class="main-nav">
+                <ul class="nav-menu">
+                    <li class="nav-item"><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li class="nav-item"><a href="#"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li class="nav-item"><a href="#" class="active"><i class="fas fa-chalkboard-teacher"></i> Teachers</a></li>
+                    <li class="nav-item"><a href="#"><i class="fas fa-clipboard-list"></i> Results</a></li>
+                    <li class="nav-item"><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <a href="../logout.php" class="btn btn-login"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+            <!-- Mobile menu toggle -->
+            <div class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
         </div>
-    </div>
-<div>
-<p>
-© <?php echo date('Y'); ?> StudentFlex. All Rights Reserved.
-
-</p>
-</div>
-</footer>
-<!-- Include JavaScript -->
-<script src="../assets/js/scripts.js"></script>
-<script>
-    // Auto-hide alert messages after 5 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-        const alerts = document.querySelectorAll('.alert');
-        if (alerts.length > 0) {
-            setTimeout(function() {
-                alerts.forEach(function(alert) {
-                    alert.style.display = 'none';
-                });
-            }, 5000);
-        }
-    });
-</script>
+    </header>
+    <main>
+        <div class="container main-content">
+            <h2><i class="fas fa-user-plus"></i> Add New Teacher</h2>
+            
+            <?php if(!empty($message)): ?>
+                <div class="alert alert-<?php echo $message_type; ?>">
+                    <?php echo $message; ?>
+                </div>
+            <?php endif; ?>
+            
+            <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+                <div class="form-group">
+                    <label for="username">Username <span class="required">*</span></label>
+                    <input type="text" id="username" name="username" class="form-control" value="<?php echo htmlspecialchars($username); ?>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password <span class="required">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password <span class="required">*</span></label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="full_name">Full Name <span class="required">*</span></label>
+                    <input type="text" id="full_name" name="full_name" class="form-control" value="<?php echo htmlspecialchars($full_name); ?>" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" value="<?php echo htmlspecialchars($email); ?>" required>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Add Teacher
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="footer-container">
+            <div class="footer-section about">
+                <h3>About StudentFlex</h3>
+                <p>StudentFlex is a comprehensive student result management system designed to simplify academic record keeping for educational institutions.</p>
+            </div>
+            <div class="footer-section links">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.php">Home</a></li>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-section contact">
+                <h3>Contact Us</h3>
+                <p><i class="fas fa-map-marker-alt"></i> 123 Education St, Academic City</p>
+                <p><i class="fas fa-phone"></i> (123) 456-7890</p>
+                <p><i class="fas fa-envelope"></i> info@studentflex.com</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <?php echo date('Y'); ?> StudentFlex. All Rights Reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- Include JavaScript -->
+    <script src="../assets/js/scripts.js"></script>
+    <script>
+        // Auto-hide alert messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            if (alerts.length > 0) {
+                setTimeout(function() {
+                    alerts.forEach(function(alert) {
+                        alert.style.display = 'none';
+                    });
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 </html>
