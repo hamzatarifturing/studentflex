@@ -76,19 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Hash password
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         
-        // Line ~539-540 in the add-teacher.php file:
-        // CHANGE FROM:
-        $role = 'student'; // Using student role since the schema only allows 'admin' or 'student'
-        $status = 'active';
-
-        // CHANGE TO:
-        // We need to alter the database schema first to support 'teacher' role
-        $query = "ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'student', 'teacher') NOT NULL";
-        if($conn->query($query)) {
-            $role = 'teacher'; // Now we can store as 'teacher'
-        } else {
-            $role = 'student'; // Fallback to student if schema update fails
+        // First, try to modify the table to include 'teacher' role if not already present
+        $check_query = "SHOW COLUMNS FROM users LIKE 'role'";
+        $check_result = $conn->query($check_query);
+        if($check_result && $check_result->num_rows > 0) {
+            $row = $check_result->fetch_assoc();
+            if(strpos($row['Type'], 'teacher') === false) {
+                // Role field exists but doesn't have 'teacher' enum option
+                $alter_query = "ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'student', 'teacher') NOT NULL";
+                $conn->query($alter_query);
+            }
         }
+        
+        // Set default values
+        $role = 'teacher'; // Now using teacher role
         $status = 'active';
         
         // Prepare and execute the insert query
@@ -115,6 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Display validation errors
         $message = implode("<br>", $errors);
         $message_type = "error";
+    }
+}
+
+// Get all teachers
+$teachers = array();
+$query = "SELECT id, username, full_name, email, status, created_at FROM users WHERE role='teacher' OR role='student' ORDER BY id DESC";
+$result = $conn->query($query);
+if($result && $result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $teachers[] = $row;
     }
 }
 ?>
@@ -190,6 +201,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .required {
             color: red;
         }
+        
+        /* Table styles */
+        .teacher-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        
+        .teacher-table th, 
+        .teacher-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .teacher-table th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .teacher-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .teacher-table .badge {
+            display: inline-block;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .badge-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .section-title {
+            margin: 30px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -258,6 +317,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </div>
             </form>
+            
+            <h3 class="section-title"><i class="fas fa-list"></i> Existing Teachers</h3>
+            
+            <?php if(count($teachers) > 0): ?>
+                <div style="overflow-x: auto;">
+                    <table class="teacher-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Registered Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($teachers as $index => $teacher): ?>
+                                <tr>
+                                    <td><?php echo $index + 1; ?></td>
+                                    <td><?php echo htmlspecialchars($teacher['username']); ?></td>
+                                    <td><?php echo htmlspecialchars($teacher['full_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($teacher['email']); ?></td>
+                                    <td>
+                                        <?php if($teacher['status'] == 'active'): ?>
+                                            <span class="badge badge-active">Active</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-inactive">Inactive</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo date('M d, Y', strtotime($teacher['created_at'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <p>No teachers found in the system.</p>
+            <?php endif; ?>
         </div>
     </main>
     
