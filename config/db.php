@@ -3,7 +3,7 @@
 $host = 'localhost';
 $dbname = 'studentflex';
 $username = 'root';
-$password = '';
+$password = '12345678';
 
 // Establish database connection
 try {

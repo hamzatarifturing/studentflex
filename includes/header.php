@@ -25,9 +25,17 @@
                     <li class="nav-item"><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                 </ul>
             </nav>
-            <div class="auth-buttons">
-                <a href="#" class="btn btn-login"><i class="fas fa-sign-in-alt"></i> Login</a>
-            </div>
+            <!-- Start PHP session if not already started -->
+<?php if (session_status() === PHP_SESSION_NONE) { session_start(); } ?>
+
+<div class="auth-buttons">
+    <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
+        <span class="user-greeting">Hello, <?php echo htmlspecialchars($_SESSION["username"]); ?></span>
+        <a href="logout.php" class="btn btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    <?php else: ?>
+        <a href="login.php" class="btn btn-login"><i class="fas fa-sign-in-alt"></i> Login</a>
+    <?php endif; ?>
+</div>
             <!-- Mobile menu toggle -->
             <div class="menu-toggle">
                 <i class="fas fa-bars"></i>
