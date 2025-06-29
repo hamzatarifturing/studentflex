@@ -76,8 +76,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Hash password
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         
-        // Set default values
+        // Line ~539-540 in the add-teacher.php file:
+        // CHANGE FROM:
         $role = 'student'; // Using student role since the schema only allows 'admin' or 'student'
+        $status = 'active';
+
+        // CHANGE TO:
+        // We need to alter the database schema first to support 'teacher' role
+        $query = "ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'student', 'teacher') NOT NULL";
+        if($conn->query($query)) {
+            $role = 'teacher'; // Now we can store as 'teacher'
+        } else {
+            $role = 'student'; // Fallback to student if schema update fails
+        }
         $status = 'active';
         
         // Prepare and execute the insert query
