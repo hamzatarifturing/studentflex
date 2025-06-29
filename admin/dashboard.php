@@ -161,7 +161,7 @@ include_once "../includes/header.php";
             <div class="quick-actions mt-4">
                 <h4>Quick Actions</h4>
                 <div class="row mt-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="#" class="action-link">
                             <div class="action-card">
                                 <i class="fas fa-user-plus"></i>
@@ -169,7 +169,15 @@ include_once "../includes/header.php";
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <a href="add-teacher.php" class="action-link">
+                            <div class="action-card">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                <span>Add A Teacher</span>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
                         <a href="#" class="action-link">
                             <div class="action-card">
                                 <i class="fas fa-plus-circle"></i>
@@ -177,7 +185,7 @@ include_once "../includes/header.php";
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="#" class="action-link">
                             <div class="action-card">
                                 <i class="fas fa-file-alt"></i>
