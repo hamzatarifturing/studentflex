@@ -8,7 +8,7 @@
             <div class="footer-section links">
                 <h3>Quick Links</h3>
                 <ul>
-                    <li><a href="index.php">Home</a></li>
+                    <li><a href="<?php echo isset($root_path) ? $root_path : ''; ?>index.php">Home</a></li>
                     <li><a href="#">About</a></li>
                     <li><a href="#">Contact</a></li>
                     <li><a href="#">Privacy Policy</a></li>
@@ -33,6 +33,6 @@
     </footer>
     
     <!-- Include JavaScript -->
-    <script src="assets/js/scripts.js"></script>
+    <script src="<?php echo isset($root_path) ? $root_path : ''; ?>assets/js/scripts.js"></script>
 </body>
 </html>

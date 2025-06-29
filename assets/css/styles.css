@@ -423,3 +423,174 @@ footer {
     background-color: #f8f9fa;
     border-radius: 4px;
 }
+
+/* Admin Dashboard Styles */
+.admin-dashboard {
+    padding: 1.5rem 0;
+}
+
+.dashboard-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+}
+
+.dashboard-header h1 {
+    color: #2c3e50;
+    font-size: 2rem;
+}
+
+.dashboard-header i {
+    color: #3498db;
+    margin-right: 0.5rem;
+}
+
+.card {
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.25rem;
+    background-color: #fff;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-title {
+    margin-bottom: 0.75rem;
+    color: #2c3e50;
+}
+
+.card-text {
+    color: #6c757d;
+}
+
+/* Dashboard Stats */
+.dashboard-stats .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col-md-3 {
+    position: relative;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    flex: 0 0 25%;
+    max-width: 25%;
+}
+
+@media (max-width: 768px) {
+    .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .col-md-3, .col-md-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+.stat-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card-body {
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #3498db;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    color: #2c3e50;
+}
+
+/* Quick Actions */
+.quick-actions h4 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.col-md-4 {
+    position: relative;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
+}
+
+.action-link {
+    display: block;
+    text-decoration: none;
+}
+
+.action-card {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    height: 100%;
+}
+
+.action-card:hover {
+    background-color: #e9ecef;
+}
+
+.action-card i {
+    font-size: 2rem;
+    color: #3498db;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.action-card span {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Utility Classes */
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}

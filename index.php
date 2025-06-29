@@ -32,14 +32,20 @@ if(isset($_SESSION["welcome_message"])) {
         </div>
         
         <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
-            <div class="user-info mt-4">
-                <p>Logged in as: <strong><?php echo htmlspecialchars($_SESSION["full_name"]); ?></strong> (<?php echo ucfirst($_SESSION["role"]); ?>)</p>
-                <?php if($_SESSION["role"] == "admin"): ?>
-                    <a href="#" class="btn btn-primary mt-2">Manage System</a>
-                <?php else: ?>
-                    <a href="#" class="btn btn-primary mt-2">View My Results</a>
-                <?php endif; ?>
-            </div>
+            <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
+                <div class="user-info mt-4">
+                    <p>Logged in as: <strong><?php echo htmlspecialchars($_SESSION["full_name"]); ?></strong> (<?php echo ucfirst($_SESSION["role"]); ?>)</p>
+                    <?php if($_SESSION["role"] == "admin"): ?>
+                        <a href="admin/dashboard.php" class="btn btn-primary mt-2">Admin Dashboard</a>
+                    <?php else: ?>
+                        <a href="#" class="btn btn-primary mt-2">View My Results</a>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="login-prompt mt-4">
+                    <p>Please <a href="login.php">login</a> to access the system.</p>
+                </div>
+            <?php endif; ?>
         <?php else: ?>
             <div class="login-prompt mt-4">
                 <p>Please <a href="login.php">login</a> to access the system.</p>
