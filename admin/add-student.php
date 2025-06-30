@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
     $confirm_password = $_POST['confirm_password'];
     $full_name = trim($_POST['full_name']);
     $email = trim($_POST['email']);
-    $student_id = trim($_POST['student_id']);
+    $student_id = trim($_POST['student_id']); // This will be the auto-generated ID
     $class = trim($_POST['class']);
     $section = trim($_POST['section']);
     
@@ -47,7 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
     }
     
     if (empty($student_id)) {
-        $errors[] = "Student ID is required";
+        // Generate new student ID if empty for some reason
+        $student_id_query = "SELECT MAX(CAST(SUBSTRING(student_id, 4) AS UNSIGNED)) as max_id FROM students";
+        $id_result = $conn->query($student_id_query);
+        if ($id_result && $id_result->num_rows > 0) {
+            $row = $id_result->fetch_assoc();
+            $max_id = $row['max_id'];
+            $next_id = ($max_id > 0) ? $max_id + 1 : 1;
+            $student_id = 'STU' . str_pad($next_id, 4, '0', STR_PAD_LEFT);
+        } else {
+            $student_id = 'STU0001'; // First student
+        }
     }
     
     if (empty($class)) {
@@ -161,6 +171,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_student'])) {
     
     // Restore autocommit mode
     $conn->autocommit(TRUE);
+}
+
+// Get next student ID
+$next_student_id = '';
+$student_id_query = "SELECT MAX(CAST(SUBSTRING(student_id, 4) AS UNSIGNED)) as max_id FROM students";
+$id_result = $conn->query($student_id_query);
+if ($id_result && $id_result->num_rows > 0) {
+    $row = $id_result->fetch_assoc();
+    $max_id = $row['max_id'];
+    $next_id = ($max_id > 0) ? $max_id + 1 : 1;
+    $next_student_id = 'STU' . str_pad($next_id, 4, '0', STR_PAD_LEFT);
+} else {
+    $next_student_id = 'STU0001'; // First student
 }
 
 // Get all students for display
@@ -472,7 +495,8 @@ $students_result = $conn->query($students_query);
                     <div class="form-row">
                         <div class="form-group" style="width: 33.33%;">
                             <label for="student_id">Student ID</label>
-                            <input type="text" class="form-control" id="student_id" name="student_id" value="<?php echo isset($student_id) ? htmlspecialchars($student_id) : ''; ?>" required>
+                            <input type="text" class="form-control" id="student_id" name="student_id" value="<?php echo htmlspecialchars($next_student_id); ?>" readonly required>
+                            <small class="form-text text-muted">ID is automatically generated</small>
                         </div>
                         
                         <div class="form-group" style="width: 33.33%;">
