@@ -24,8 +24,6 @@ $success = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate and sanitize inputs
     $full_name = trim($_POST['full_name']);
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
     $class = trim($_POST['class']);
     $section = trim($_POST['section']);
     $status = $_POST['status'];
@@ -33,16 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Basic validation
     if (empty($full_name)) {
         $errors[] = "Full name is required";
-    }
-    
-    if (empty($username)) {
-        $errors[] = "Username is required";
-    }
-    
-    if (empty($email)) {
-        $errors[] = "Email is required";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = "Invalid email format";
     }
     
     if (empty($class)) {
@@ -53,31 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Section is required";
     }
     
-    // Check username uniqueness (exclude current user)
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
-    $stmt->bind_param("si", $username, $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        $errors[] = "Username already exists. Please choose another one.";
-    }
-    
-    // Check email uniqueness (exclude current user)
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
-    $stmt->bind_param("si", $email, $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        $errors[] = "Email already exists. Please choose another one.";
-    }
-    
     // If no errors, proceed with update
     if (empty($errors)) {
         $conn->begin_transaction();
         try {
-            // Update users table
-            $stmt = $conn->prepare("UPDATE users SET username = ?, full_name = ?, email = ?, status = ?, updated_at = NOW() WHERE id = ?");
-            $stmt->bind_param("ssssi", $username, $full_name, $email, $status, $id);
+            // Update users table (only full_name and status)
+            $stmt = $conn->prepare("UPDATE users SET full_name = ?, status = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->bind_param("ssi", $full_name, $status, $id);
             $stmt->execute();
             
             // Update students table
@@ -235,16 +205,18 @@ $student = $result->fetch_assoc();
                                         <input type="text" class="form-control" id="full_name" name="full_name" value="<?php echo htmlspecialchars($student['full_name']); ?>" required>
                                     </div>
                                     
-                                    <!-- Username -->
+                                    <!-- Username (read-only) -->
                                     <div class="form-group">
-                                        <label for="username">Username*</label>
-                                        <input type="text" class="form-control" id="username" name="username" value="<?php echo htmlspecialchars($student['username']); ?>" required>
+                                        <label for="username">Username</label>
+                                        <input type="text" class="form-control" id="username" value="<?php echo htmlspecialchars($student['username']); ?>" disabled>
+                                        <small class="form-text text-muted">Username cannot be changed after creation</small>
                                     </div>
                                     
-                                    <!-- Email -->
+                                    <!-- Email (read-only) -->
                                     <div class="form-group">
-                                        <label for="email">Email*</label>
-                                        <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($student['email']); ?>" required>
+                                        <label for="email">Email</label>
+                                        <input type="email" class="form-control" id="email" value="<?php echo htmlspecialchars($student['email']); ?>" disabled>
+                                        <small class="form-text text-muted">Email cannot be changed after creation</small>
                                     </div>
                                     
                                     <!-- Status -->
