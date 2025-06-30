@@ -288,6 +288,32 @@ $students_result = $conn->query($students_query);
             background-color: #c0392b;
         }
         
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .mx-1 {
+            margin-left: 0.25rem;
+            margin-right: 0.25rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
         .table-container {
             overflow-x: auto;
         }
@@ -569,7 +595,7 @@ $students_result = $conn->query($students_query);
                                 <th>Email</th>
                                 <th>Status</th>
                                 <th>Added On</th>
-                                <th>Actions</th>
+                                <th style="min-width: 200px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -591,9 +617,17 @@ $students_result = $conn->query($students_query);
                                     </td>
                                     <td><?php echo date('M d, Y', strtotime($student['created_at'])); ?></td>
                                     <td>
-                                        <button class="btn btn-danger btn-sm" onclick="showDeleteModal('<?php echo $student['id']; ?>', '<?php echo htmlspecialchars($student['full_name']); ?>')">
-                                            <i class="fas fa-trash-alt"></i> Delete
-                                        </button>
+                                        <div class="btn-group">
+                                            <a href="view-student.php?id=<?php echo $student['id']; ?>" class="btn btn-info btn-sm mx-1">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="edit-student.php?id=<?php echo $student['id']; ?>" class="btn btn-primary btn-sm mx-1">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <button class="btn btn-danger btn-sm mx-1" onclick="showDeleteModal('<?php echo $student['id']; ?>', '<?php echo htmlspecialchars($student['full_name']); ?>')">
+                                                <i class="fas fa-trash-alt"></i> Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
