@@ -320,9 +320,14 @@ $student = $result->fetch_assoc();
                             
                             <div class="form-group mt-4">
                                 <div class="d-flex justify-content-between">
-                                    <a href="view-student.php?id=<?php echo $id; ?>" class="btn btn-secondary">
-                                        <i class="fas fa-times-circle mr-1"></i> Cancel
-                                    </a>
+                                    <div>
+                                        <a href="view-student.php?id=<?php echo $id; ?>" class="btn btn-secondary mr-2">
+                                            <i class="fas fa-times-circle mr-1"></i> Cancel
+                                        </a>
+                                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteStudentModal">
+                                            <i class="fas fa-trash-alt mr-1"></i> Delete Student
+                                        </button>
+                                    </div>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-save mr-1"></i> Save Changes
                                     </button>
@@ -331,6 +336,32 @@ $student = $result->fetch_assoc();
                         </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    <!-- Delete Student Modal -->
+    <div class="modal fade" id="deleteStudentModal" tabindex="-1" role="dialog" aria-labelledby="deleteStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteStudentModalLabel">Confirm Delete</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this student?</p>
+                    <p><strong>Name:</strong> <?php echo htmlspecialchars($student['full_name']); ?></p>
+                    <p><strong>Student ID:</strong> <?php echo htmlspecialchars($student['student_id']); ?></p>
+                    <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. All related data will be permanently deleted.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <form action="delete-student.php" method="POST">
+                        <input type="hidden" name="id" value="<?php echo $id; ?>">
+                        <input type="hidden" name="redirect" value="add-student">
+                        <button type="submit" class="btn btn-danger">Delete Student</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
