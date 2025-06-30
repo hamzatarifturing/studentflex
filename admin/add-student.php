@@ -34,6 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_student'])) {
         $errors[] = "Password is required";
     } elseif ($password !== $confirm_password) {
         $errors[] = "Passwords do not match";
+    } elseif (strlen($password) < 8) {
+        $errors[] = "Password must be at least 8 characters long";
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = "Password must contain at least one uppercase letter";
+    } elseif (!preg_match('/[a-z]/', $password)) {
+        $errors[] = "Password must contain at least one lowercase letter";
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $errors[] = "Password must contain at least one number";
+    } elseif (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        $errors[] = "Password must contain at least one special character";
     }
     
     if (empty($full_name)) {
@@ -484,6 +494,9 @@ $students_result = $conn->query($students_query);
                         <div class="form-group" style="width: 33.33%;">
                             <label for="password">Password</label>
                             <input type="password" class="form-control" id="password" name="password" required>
+                            <small class="form-text text-muted">
+                                Must be at least 8 characters and include uppercase, lowercase, number, and special character.
+                            </small>
                         </div>
                         
                         <div class="form-group" style="width: 33.33%;">
@@ -618,6 +631,27 @@ $students_result = $conn->query($students_query);
     </div>
     
     <script>
+        // Password strength validation on client-side
+        document.getElementById('password').addEventListener('input', function() {
+            var password = this.value;
+            var hasUpperCase = /[A-Z]/.test(password);
+            var hasLowerCase = /[a-z]/.test(password);
+            var hasNumbers = /[0-9]/.test(password);
+            var hasSpecial = /[^A-Za-z0-9]/.test(password);
+            var isLongEnough = password.length >= 8;
+            
+            // Update password field styling based on strength
+            if (password.length === 0) {
+                this.style.borderColor = '#ddd'; // Default
+            } else if (isLongEnough && hasUpperCase && hasLowerCase && hasNumbers && hasSpecial) {
+                this.style.borderColor = '#2ecc71'; // Strong - Green
+            } else if (password.length >= 6 && (hasUpperCase + hasLowerCase + hasNumbers + hasSpecial) >= 3) {
+                this.style.borderColor = '#f39c12'; // Medium - Orange
+            } else {
+                this.style.borderColor = '#e74c3c'; // Weak - Red
+            }
+        });
+        
         // Close alerts after 5 seconds
         setTimeout(function() {
             var alerts = document.querySelectorAll('.alert');
