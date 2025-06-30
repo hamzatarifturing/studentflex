@@ -500,13 +500,31 @@ $students_result = $conn->query($students_query);
                         </div>
                         
                         <div class="form-group" style="width: 33.33%;">
-                            <label for="class">Class</label>
-                            <input type="text" class="form-control" id="class" name="class" value="<?php echo isset($class) ? htmlspecialchars($class) : ''; ?>" required>
+                            <label for="class">Class/Semester</label>
+                            <select class="form-control" id="class" name="class" required>
+                                <option value="" disabled <?php echo !isset($class) ? 'selected' : ''; ?>>Select Class</option>
+                                <?php 
+                                $classes = array('ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT');
+                                foreach($classes as $class_option) {
+                                    $selected = (isset($class) && $class == $class_option) ? 'selected' : '';
+                                    echo "<option value=\"$class_option\" $selected>$class_option</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                         
                         <div class="form-group" style="width: 33.33%;">
                             <label for="section">Section</label>
-                            <input type="text" class="form-control" id="section" name="section" value="<?php echo isset($section) ? htmlspecialchars($section) : ''; ?>" required>
+                            <select class="form-control" id="section" name="section" required>
+                                <option value="" disabled <?php echo !isset($section) ? 'selected' : ''; ?>>Select Section</option>
+                                <?php 
+                                $sections = array('A', 'B', 'C', 'D', 'E', 'F');
+                                foreach($sections as $section_option) {
+                                    $selected = (isset($section) && $section == $section_option) ? 'selected' : '';
+                                    echo "<option value=\"$section_option\" $selected>Section $section_option</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                     </div>
                     
