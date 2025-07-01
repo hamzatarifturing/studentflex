@@ -147,9 +147,12 @@ function generateResult($conn, $student_id) {
 
 // Get all students
 $students = [];
-$student_query = "SELECT id, student_name, roll_no FROM students WHERE is_active = 'yes' ORDER BY roll_no ASC";
+$student_query = "SELECT s.id, s.student_id, s.class, s.section, u.name as student_name 
+                  FROM students s 
+                  JOIN users u ON s.user_id = u.id 
+                  ORDER BY s.student_id ASC";
 $student_result = $conn->query($student_query);
-if ($student_result->num_rows > 0) {
+if ($student_result && $student_result->num_rows > 0) {
     while ($row = $student_result->fetch_assoc()) {
         $students[] = $row;
     }
@@ -168,12 +171,14 @@ if ($subject_result->num_rows > 0) {
 // Get all marks with student and subject details
 $marks_data = [];
 $marks_query = "SELECT m.id, m.student_id, m.marks, m.exam_date, m.remarks, m.created_at, 
-                       s.student_name, s.roll_no, 
-                       sub.subject_name, sub.subject_code, sub.class
+                       s.student_id as student_roll, s.class, s.section, 
+                       u.name as student_name,
+                       sub.subject_name, sub.subject_code, sub.class as subject_class
                 FROM marks m
                 JOIN students s ON m.student_id = s.id
+                JOIN users u ON s.user_id = u.id
                 JOIN subjects sub ON m.subject_id = sub.id
-                ORDER BY s.roll_no ASC, sub.subject_name ASC";
+                ORDER BY s.student_id ASC, sub.subject_name ASC";
 $marks_result = $conn->query($marks_query);
 if ($marks_result && $marks_result->num_rows > 0) {
     while ($row = $marks_result->fetch_assoc()) {
@@ -245,7 +250,7 @@ include_once '../includes/header.php';
                                     <option value="">Select Student</option>
                                     <?php foreach ($students as $student): ?>
                                         <option value="<?php echo $student['id']; ?>">
-                                            <?php echo htmlspecialchars($student['roll_no'] . ' - ' . $student['student_name']); ?>
+                                            <?php echo htmlspecialchars($student['student_id'] . ' - ' . $student['student_name'] . ' (' . $student['class'] . '-' . $student['section'] . ')'); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -296,7 +301,7 @@ include_once '../includes/header.php';
                         <table class="table table-bordered table-striped table-marks" id="marksTable">
                             <thead class="thead-dark">
                                 <tr>
-                                    <th>Roll No.</th>
+                                    <th>Student ID</th>
                                     <th>Student Name</th>
                                     <th>Subject (Code)</th>
                                     <th>Class</th>
@@ -310,10 +315,10 @@ include_once '../includes/header.php';
                                 <?php if (count($marks_data) > 0): ?>
                                     <?php foreach ($marks_data as $mark): ?>
                                         <tr>
-                                            <td><?php echo htmlspecialchars($mark['roll_no']); ?></td>
-                                            <td><?php echo htmlspecialchars($mark['student_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($mark['student_roll']); ?></td>
+                                            <td><?php echo htmlspecialchars($mark['student_name'] . ' (' . $mark['class'] . '-' . $mark['section'] . ')'); ?></td>
                                             <td><?php echo htmlspecialchars($mark['subject_name'] . ' (' . $mark['subject_code'] . ')'); ?></td>
-                                            <td><?php echo htmlspecialchars($mark['class']); ?></td>
+                                            <td><?php echo htmlspecialchars($mark['subject_class']); ?></td>
                                             <td>
                                                 <?php 
                                                     $mark_value = floatval($mark['marks']);
