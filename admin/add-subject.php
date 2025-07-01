@@ -78,27 +78,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_subject'])) {
 // Process edit subject request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_subject'])) {
     $subject_id = intval($_POST['subject_id']);
-    $subject_code = trim($_POST['subject_code']);
     $subject_name = trim($_POST['subject_name']);
     $class = $_POST['class'];
     $is_active = $_POST['is_active'];
     
     // Validate input
-    if (empty($subject_code) || empty($subject_name) || empty($class)) {
+    if (empty($subject_name) || empty($class)) {
         $error = "Please fill in all required fields";
     } else {
-        // Check if subject code already exists for another subject
-        $stmt = $conn->prepare("SELECT id FROM subjects WHERE subject_code = ? AND id != ?");
-        $stmt->bind_param("si", $subject_code, $subject_id);
+        // Get the existing subject code (instead of trying to update it)
+        $stmt = $conn->prepare("SELECT subject_code FROM subjects WHERE id = ?");
+        $stmt->bind_param("i", $subject_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
-        if ($result->num_rows > 0) {
-            $error = "Subject code already exists. Please use a different code.";
+        if ($result->num_rows === 0) {
+            $error = "Subject not found";
         } else {
-            // Update subject
-            $stmt = $conn->prepare("UPDATE subjects SET subject_code = ?, subject_name = ?, class = ?, is_active = ? WHERE id = ?");
-            $stmt->bind_param("ssssi", $subject_code, $subject_name, $class, $is_active, $subject_id);
+            // Update subject WITHOUT changing the subject code
+            $stmt = $conn->prepare("UPDATE subjects SET subject_name = ?, class = ?, is_active = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $subject_name, $class, $is_active, $subject_id);
             
             if ($stmt->execute()) {
                 $success = "Subject updated successfully";
@@ -268,59 +267,128 @@ include_once '../includes/header.php';
 </div>
 
 <!-- Edit Subject Modal -->
-<div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editSubjectModalLabel">Edit Subject</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+<div>
+<div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+<h5>
+Edit Subject
+
+</h5>
+<button>
+<span>
+×
+
+</span>
+</button>
+</div>
+<form>
+<div>
+                <div class="alert alert-info">
+<i class="fa fa-info-circle"></i>
+
+Subject code cannot be changed. If you need to modify the subject code, please delete this subject and add a new one.
+
+</div>
+                <input type="hidden" name="subject_id" id="edit_subject_id">
+<div>
+<label>
+Subject Code
+
+<span>
+</span>
+</label>
+                    <input type="text" class="form-control" id="edit_subject_code" name="subject_code" readonly disabled>
+<small>
+Subject code cannot be modified
+
+</small>
+</div>
+<div>
+<label>
+Subject Name
+
+<span>
+</span>
+</label>
+                    <input type="text" class="form-control" id="edit_subject_name" name="subject_name" required>
+</div>
+<div>
+<label>
+Class
+
+<span>
+</span>
+</label>
+<select>
+<option>
+Select Class
+
+</option>
+<option>
+Class ONE
+
+</option>
+<option>
+Class TWO
+
+</option>
+<option>
+Class THREE
+
+</option>
+<option>
+Class FOUR
+
+</option>
+<option>
+Class FIVE
+
+</option>
+<option>
+Class SIX
+
+</option>
+<option>
+Class SEVEN
+
+</option>
+<option>
+Class EIGHT
+
+</option>
+</select>
+</div>
+<div>
+<label>
+Status
+
+</label>
+<select>
+<option>
+Active
+
+</option>
+<option>
+Inactive
+
+</option>
+</select>
+</div>
             </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="subject_id" id="edit_subject_id">
-                    
-                    <div class="form-group">
-                        <label for="edit_subject_code">Subject Code <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="edit_subject_code" name="subject_code" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_subject_name">Subject Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="edit_subject_name" name="subject_name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_class">Class <span class="text-danger">*</span></label>
-                        <select class="form-control" id="edit_class" name="class" required>
-                            <option value="">Select Class</option>
-                            <option value="ONE">Class ONE</option>
-                            <option value="TWO">Class TWO</option>
-                            <option value="THREE">Class THREE</option>
-                            <option value="FOUR">Class FOUR</option>
-                            <option value="FIVE">Class FIVE</option>
-                            <option value="SIX">Class SIX</option>
-                            <option value="SEVEN">Class SEVEN</option>
-                            <option value="EIGHT">Class EIGHT</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_is_active">Status</label>
-                        <select class="form-control" id="edit_is_active" name="is_active">
-                            <option value="yes">Active</option>
-                            <option value="no">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" name="edit_subject" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
+<div>
+<button>
+Cancel
+
+</button>
+<button>
+Save Changes
+
+</button>
+</div>
+</form>
     </div>
+</div>
 </div>
 
 <!-- Delete Subject Modal -->
