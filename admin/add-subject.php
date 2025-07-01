@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_subject'])) {
     if (empty($subject_name) || empty($class)) {
         $error = "Please fill in all required fields";
     } else {
-        // Get the existing subject code (instead of trying to update it)
+        // Get the current subject code (since it's now read-only in the form)
         $stmt = $conn->prepare("SELECT subject_code FROM subjects WHERE id = ?");
         $stmt->bind_param("i", $subject_id);
         $stmt->execute();
@@ -95,7 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_subject'])) {
         if ($result->num_rows === 0) {
             $error = "Subject not found";
         } else {
-            // Update subject WITHOUT changing the subject code
+            $subject_data = $result->fetch_assoc();
+            $subject_code = $subject_data['subject_code'];
+            
+            // Update subject (without changing the code)
             $stmt = $conn->prepare("UPDATE subjects SET subject_name = ?, class = ?, is_active = ? WHERE id = ?");
             $stmt->bind_param("sssi", $subject_name, $class, $is_active, $subject_id);
             
@@ -120,6 +123,17 @@ if ($result->num_rows > 0) {
 // Include header
 include_once '../includes/header.php';
 ?>
+
+<!-- jQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<!-- Bootstrap CDNs -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <div class="container mt-4">
     <div class="row">
@@ -267,128 +281,64 @@ include_once '../includes/header.php';
 </div>
 
 <!-- Edit Subject Modal -->
-<div>
-<div class="modal-dialog" role="document">
-    <div class="modal-content">
-        <div class="modal-header">
-<h5>
-Edit Subject
-
-</h5>
-<button>
-<span>
-×
-
-</span>
-</button>
-</div>
-<form>
-<div>
-                <div class="alert alert-info">
-<i class="fa fa-info-circle"></i>
-
-Subject code cannot be changed. If you need to modify the subject code, please delete this subject and add a new one.
-
-</div>
-                <input type="hidden" name="subject_id" id="edit_subject_id">
-<div>
-<label>
-Subject Code
-
-<span>
-</span>
-</label>
-                    <input type="text" class="form-control" id="edit_subject_code" name="subject_code" readonly disabled>
-<small>
-Subject code cannot be modified
-
-</small>
-</div>
-<div>
-<label>
-Subject Name
-
-<span>
-</span>
-</label>
-                    <input type="text" class="form-control" id="edit_subject_name" name="subject_name" required>
-</div>
-<div>
-<label>
-Class
-
-<span>
-</span>
-</label>
-<select>
-<option>
-Select Class
-
-</option>
-<option>
-Class ONE
-
-</option>
-<option>
-Class TWO
-
-</option>
-<option>
-Class THREE
-
-</option>
-<option>
-Class FOUR
-
-</option>
-<option>
-Class FIVE
-
-</option>
-<option>
-Class SIX
-
-</option>
-<option>
-Class SEVEN
-
-</option>
-<option>
-Class EIGHT
-
-</option>
-</select>
-</div>
-<div>
-<label>
-Status
-
-</label>
-<select>
-<option>
-Active
-
-</option>
-<option>
-Inactive
-
-</option>
-</select>
-</div>
+<div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSubjectModalLabel">Edit Subject</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-<div>
-<button>
-Cancel
-
-</button>
-<button>
-Save Changes
-
-</button>
-</div>
-</form>
+            <form method="POST" action="">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i> Subject code cannot be changed. If you need to modify the subject code, please delete this subject and add a new one.
+                    </div>
+                    
+                    <input type="hidden" name="subject_id" id="edit_subject_id">
+                    
+                    <div class="form-group">
+                        <label for="edit_subject_code">Subject Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_subject_code" name="subject_code" readonly disabled>
+                        <small class="form-text text-muted">Subject code cannot be modified</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_subject_name">Subject Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_subject_name" name="subject_name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_class">Class <span class="text-danger">*</span></label>
+                        <select class="form-control" id="edit_class" name="class" required>
+                            <option value="">Select Class</option>
+                            <option value="ONE">Class ONE</option>
+                            <option value="TWO">Class TWO</option>
+                            <option value="THREE">Class THREE</option>
+                            <option value="FOUR">Class FOUR</option>
+                            <option value="FIVE">Class FIVE</option>
+                            <option value="SIX">Class SIX</option>
+                            <option value="SEVEN">Class SEVEN</option>
+                            <option value="EIGHT">Class EIGHT</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_is_active">Status</label>
+                        <select class="form-control" id="edit_is_active" name="is_active">
+                            <option value="yes">Active</option>
+                            <option value="no">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" name="edit_subject" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 </div>
 
 <!-- Delete Subject Modal -->
