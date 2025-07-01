@@ -60,20 +60,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_marks'])) {
             
             if ($stmt->execute()) {
                 $success = "Marks updated successfully";
+                // Update result for this student and exam
+                generateResult($conn, $student_id, $exam_id);
             } else {
                 $error = "Error updating marks: " . $conn->error;
             }
         } else {
             // Insert new marks
-            $created_by = $_SESSION['user_id']; // Assuming you store this in session
-            $stmt = $conn->prepare("INSERT INTO marks (student_id, subject_id, exam_id, marks_obtained, marks_max, grade, remarks, created_by, created_at, updated_at) 
+            $created_by = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 1; // Default to admin if not set
+            $stmt = $conn->prepare("INSERT INTO marks (student_id, subject_id, exam_id, marks_obtained, marks_max, 
+                                   grade, remarks, created_by, created_at, updated_at) 
                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
-            $stmt->bind_param("iiiddsis", $student_id, $subject_id, $exam_id, $marks_obtained, $marks_max, $grade, $remarks, $created_by);
+            $stmt->bind_param("iiiddssi", $student_id, $subject_id, $exam_id, $marks_obtained, $marks_max, 
+                             $grade, $remarks, $created_by);
             
             if ($stmt->execute()) {
                 $success = "Marks added successfully";
-                // Generate result record
-                generateResult($conn, $student_id);
+                // Generate result for this student and exam
+                generateResult($conn, $student_id, $exam_id);
             } else {
                 $error = "Error adding marks: " . $conn->error;
             }
@@ -84,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_marks'])) {
 // Process delete marks request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_marks'])) {
     $marks_id = intval($_POST['marks_id']);
-    $student_id = intval($_POST['student_id']); // For result recalculation
+    $student_id = intval($_POST['student_id']); 
+    $exam_id = intval($_POST['exam_id']);
     
     // Delete the marks entry
     $stmt = $conn->prepare("DELETE FROM marks WHERE id = ?");
@@ -92,18 +97,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_marks'])) {
     
     if ($stmt->execute()) {
         $success = "Marks deleted successfully";
-        // Recalculate results for this student
-        generateResult($conn, $student_id);
+        // Recalculate results for this student and exam
+        generateResult($conn, $student_id, $exam_id);
     } else {
         $error = "Error deleting marks: " . $conn->error;
     }
 }
 
-// Function to generate/update result for a student
-function generateResult($conn, $student_id) {
-    // Get all marks for the student
-    $stmt = $conn->prepare("SELECT subject_id, marks_obtained, marks_max FROM marks WHERE student_id = ?");
-    $stmt->bind_param("i", $student_id);
+// Function to generate/update result for a student and exam
+function generateResult($conn, $student_id, $exam_id) {
+    // Get all marks for the student in this exam
+    $stmt = $conn->prepare("SELECT subject_id, marks_obtained, marks_max FROM marks 
+                           WHERE student_id = ? AND exam_id = ?");
+    $stmt->bind_param("ii", $student_id, $exam_id);
     $stmt->execute();
     $marks_result = $stmt->get_result();
     
@@ -112,7 +118,7 @@ function generateResult($conn, $student_id) {
         $total_max = 0;
         $subject_count = 0;
         
-        // Calculate total and average
+        // Calculate total and percentage
         while ($mark = $marks_result->fetch_assoc()) {
             $total_obtained += $mark['marks_obtained'];
             $total_max += $mark['marks_max'];
@@ -121,47 +127,66 @@ function generateResult($conn, $student_id) {
         
         $percentage = ($total_obtained / $total_max) * 100;
         
-        // Determine grade and result status based on percentage
+        // Determine grade and result status
         $grade = '';
         $result_status = '';
         
         if ($percentage >= 90) {
             $grade = 'A+';
-            $result_status = 'PASS';
+            $result_status = 'pass';
         } elseif ($percentage >= 80) {
             $grade = 'A';
-            $result_status = 'PASS';
+            $result_status = 'pass';
         } elseif ($percentage >= 70) {
             $grade = 'B';
-            $result_status = 'PASS';
+            $result_status = 'pass';
         } elseif ($percentage >= 60) {
             $grade = 'C';
-            $result_status = 'PASS';
+            $result_status = 'pass';
         } elseif ($percentage >= 50) {
             $grade = 'D';
-            $result_status = 'PASS';
+            $result_status = 'pass';
         } else {
             $grade = 'F';
-            $result_status = 'FAIL';
+            $result_status = 'fail';
         }
         
-        // Check if results entry already exists for this student
-        $stmt = $conn->prepare("SELECT id FROM results WHERE student_id = ?");
-        $stmt->bind_param("i", $student_id);
+        // Calculate rank (simplified approach)
+        $rank = 0;
+        
+        // Check if results entry already exists
+        $stmt = $conn->prepare("SELECT id FROM results WHERE student_id = ? AND exam_id = ?");
+        $stmt->bind_param("ii", $student_id, $exam_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
             // Update existing results
             $result_id = $result->fetch_assoc()['id'];
-            $stmt = $conn->prepare("UPDATE results SET total_marks = ?, average = ?, grade = ?, result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $stmt->bind_param("ddssi", $total_obtained, $percentage, $grade, $result_status, $result_id);
+            $stmt = $conn->prepare("UPDATE results SET 
+                                  total_marks = ?, 
+                                  total_max_marks = ?, 
+                                  percentage = ?, 
+                                  grade = ?, 
+                                  result_status = ?, 
+                                  rank = ?, 
+                                  updated_at = CURRENT_TIMESTAMP 
+                                  WHERE id = ?");
+            $stmt->bind_param("dddssii", $total_obtained, $total_max, $percentage, 
+                            $grade, $result_status, $rank, $result_id);
             $stmt->execute();
         } else {
             // Insert new results
-            $stmt = $conn->prepare("INSERT INTO results (student_id, total_marks, average, grade, result, created_at, updated_at) 
-                                   VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
-            $stmt->bind_param("iddss", $student_id, $total_obtained, $percentage, $grade, $result_status);
+            $is_published = 'no'; // Default to unpublished
+            $stmt = $conn->prepare("INSERT INTO results 
+                                  (student_id, exam_id, total_marks, total_max_marks, 
+                                  percentage, grade, rank, result_status, is_published, 
+                                  created_at, updated_at) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
+                                  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+            $stmt->bind_param("iidddssss", $student_id, $exam_id, $total_obtained, 
+                            $total_max, $percentage, $grade, $rank, 
+                            $result_status, $is_published);
             $stmt->execute();
         }
     }
@@ -183,9 +208,11 @@ if ($student_result && $student_result->num_rows > 0) {
 
 // Get all subjects
 $subjects = [];
-$subject_query = "SELECT id, subject_code, subject_name, class FROM subjects WHERE is_active = 'yes' ORDER BY class ASC, subject_name ASC";
+$subject_query = "SELECT id, subject_code, subject_name, class FROM subjects 
+                 WHERE is_active = 'yes' 
+                 ORDER BY class ASC, subject_name ASC";
 $subject_result = $conn->query($subject_query);
-if ($subject_result->num_rows > 0) {
+if ($subject_result && $subject_result->num_rows > 0) {
     while ($row = $subject_result->fetch_assoc()) {
         $subjects[] = $row;
     }
@@ -193,7 +220,10 @@ if ($subject_result->num_rows > 0) {
 
 // Get all exams
 $exams = [];
-$exam_query = "SELECT id, exam_name, exam_date, description FROM exams ORDER BY exam_date DESC";
+$exam_query = "SELECT id, exam_name, description, start_date, end_date, class, max_marks, is_active 
+              FROM exams 
+              WHERE is_active = 'yes' 
+              ORDER BY start_date DESC";
 $exam_result = $conn->query($exam_query);
 if ($exam_result && $exam_result->num_rows > 0) {
     while ($row = $exam_result->fetch_assoc()) {
@@ -203,17 +233,18 @@ if ($exam_result && $exam_result->num_rows > 0) {
 
 // Get all marks with student and subject details
 $marks_data = [];
-$marks_query = "SELECT m.id, m.student_id, m.marks_obtained, m.marks_max, m.grade, m.exam_id, m.remarks, m.created_at, 
-                       s.student_id as student_roll, s.class, s.section, 
-                       u.full_name as student_name,
-                       sub.subject_name, sub.subject_code, sub.class as subject_class,
-                       e.exam_name, e.exam_date
-                FROM marks m
-                JOIN students s ON m.student_id = s.id
-                JOIN users u ON s.user_id = u.id
-                JOIN subjects sub ON m.subject_id = sub.id
-                JOIN exams e ON m.exam_id = e.id
-                ORDER BY e.exam_date DESC, s.student_id ASC, sub.subject_name ASC";
+$marks_query = "SELECT m.id, m.student_id, m.subject_id, m.exam_id, m.marks_obtained, m.marks_max, 
+               m.grade, m.remarks, m.created_at, 
+               s.student_id as student_roll, s.class, s.section, 
+               u.full_name as student_name,
+               sub.subject_name, sub.subject_code, sub.class as subject_class,
+               e.exam_name, e.start_date, e.end_date, e.class as exam_class, e.max_marks as exam_max_marks
+               FROM marks m
+               JOIN students s ON m.student_id = s.id
+               JOIN users u ON s.user_id = u.id
+               JOIN subjects sub ON m.subject_id = sub.id
+               JOIN exams e ON m.exam_id = e.id
+               ORDER BY e.start_date DESC, s.student_id ASC, sub.subject_name ASC";
 $marks_result = $conn->query($marks_query);
 if ($marks_result && $marks_result->num_rows > 0) {
     while ($row = $marks_result->fetch_assoc()) {
@@ -308,15 +339,18 @@ include_once '../includes/header.php';
                                 <select class="form-control" id="exam_id" name="exam_id" required>
                                     <option value="">Select Exam</option>
                                     <?php foreach ($exams as $exam): ?>
-                                        <option value="<?php echo $exam['id']; ?>">
-                                            <?php echo htmlspecialchars($exam['exam_name'] . ' (' . date('d M Y', strtotime($exam['exam_date'])) . ')'); ?>
+                                        <option value="<?php echo $exam['id']; ?>" data-max="<?php echo $exam['max_marks']; ?>">
+                                            <?php echo htmlspecialchars($exam['exam_name'] . ' - ' . $exam['class'] . ' (' . 
+                                                date('d M Y', strtotime($exam['start_date'])) . 
+                                                ($exam['start_date'] != $exam['end_date'] ? ' to ' . date('d M Y', strtotime($exam['end_date'])) : '') . 
+                                                ')'); ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="form-group col-md-4">
                                 <label for="marks_obtained">Marks Obtained <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="marks_obtained" name="marks_obtained" min="0" max="100" step="0.01" required>
+                                <input type="number" class="form-control" id="marks_obtained" name="marks_obtained" min="0" step="0.01" required>
                             </div>
                             <div class="form-group col-md-4">
                                 <label for="marks_max">Maximum Marks <span class="text-danger">*</span></label>
@@ -325,7 +359,7 @@ include_once '../includes/header.php';
                         </div>
                         <div class="form-group">
                             <label for="remarks">Remarks</label>
-                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="Optional remarks">
+                            <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="Optional remarks"></textarea>
                         </div>
                         <button type="submit" name="add_marks" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Marks
@@ -363,7 +397,10 @@ include_once '../includes/header.php';
                                             <td><?php echo htmlspecialchars($mark['student_roll']); ?></td>
                                             <td><?php echo htmlspecialchars($mark['student_name'] . ' (' . $mark['class'] . '-' . $mark['section'] . ')'); ?></td>
                                             <td><?php echo htmlspecialchars($mark['subject_name'] . ' (' . $mark['subject_code'] . ')'); ?></td>
-                                            <td><?php echo htmlspecialchars($mark['exam_name'] . ' (' . date('d M Y', strtotime($mark['exam_date'])) . ')'); ?></td>
+                                            <td><?php echo htmlspecialchars($mark['exam_name'] . ' - ' . $mark['exam_class'] . ' (' . 
+                                                date('d M Y', strtotime($mark['start_date'])) . 
+                                                ($mark['start_date'] != $mark['end_date'] ? ' to ' . date('d M Y', strtotime($mark['end_date'])) : '') . 
+                                                ')'); ?></td>
                                             <td>
                                                 <?php 
                                                     $percentage = ($mark['marks_obtained'] / $mark['marks_max']) * 100;
@@ -400,6 +437,7 @@ include_once '../includes/header.php';
                                                     data-student="<?php echo htmlspecialchars($mark['student_name']); ?>"
                                                     data-subject="<?php echo htmlspecialchars($mark['subject_name']); ?>"
                                                     data-student-id="<?php echo $mark['student_id']; ?>"
+                                                    data-exam-id="<?php echo $mark['exam_id']; ?>"
                                                     data-toggle="modal" 
                                                     data-target="#deleteMarksModal">
                                                     <i class="fas fa-trash"></i>
@@ -465,6 +503,7 @@ include_once '../includes/header.php';
                 <form id="deleteMarksForm" method="POST" action="">
                     <input type="hidden" name="marks_id" id="delete_marks_id" value="">
                     <input type="hidden" name="student_id" id="delete_student_id" value="">
+                    <input type="hidden" name="exam_id" id="delete_exam_id" value="">
                     <div class="text-right">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                         <button type="submit" name="delete_marks" class="btn btn-danger">Delete</button>
@@ -485,15 +524,40 @@ include_once '../includes/header.php';
             });
         });
         
+        // Set max marks based on selected exam
+        $("#exam_id").change(function() {
+            var selectedOption = $(this).find("option:selected");
+            var maxMarks = selectedOption.data("max");
+            
+            if (maxMarks) {
+                $("#marks_max").val(maxMarks);
+            } else {
+                $("#marks_max").val(100); // Default value
+            }
+        });
+        
+        // Validate marks obtained against max marks
+        $("#marks_obtained").on("input", function() {
+            var obtained = parseFloat($(this).val()) || 0;
+            var max = parseFloat($("#marks_max").val()) || 100;
+            
+            if (obtained > max) {
+                $(this).val(max);
+                alert("Marks obtained cannot be greater than maximum marks (" + max + ")");
+            }
+        });
+        
         // Handle delete marks button click
         $(".delete-marks-btn").click(function() {
             var marksId = $(this).data('id');
             var studentId = $(this).data('student-id');
+            var examId = $(this).data('exam-id');
             var studentName = $(this).data('student');
             var subjectName = $(this).data('subject');
             
             $("#delete_marks_id").val(marksId);
             $("#delete_student_id").val(studentId);
+            $("#delete_exam_id").val(examId);
             $("#deleteStudentName").text(studentName);
             $("#deleteSubjectName").text(subjectName);
         });
