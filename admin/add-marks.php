@@ -17,27 +17,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_marks'])) {
     // Get form data
     $student_id = intval($_POST['student_id']);
     $subject_id = intval($_POST['subject_id']);
-    $marks = floatval($_POST['marks']);
-    $exam_date = $_POST['exam_date'];
+    $exam_id = intval($_POST['exam_id']);
+    $marks_obtained = floatval($_POST['marks_obtained']);
+    $marks_max = floatval($_POST['marks_max']);
     $remarks = trim($_POST['remarks']);
     
     // Validate input
-    if (empty($student_id) || empty($subject_id) || empty($marks) || empty($exam_date)) {
+    if (empty($student_id) || empty($subject_id) || empty($exam_id) || empty($marks_obtained)) {
         $error = "Please fill in all required fields";
-    } elseif ($marks < 0 || $marks > 100) {
-        $error = "Marks must be between 0 and 100";
+    } elseif ($marks_obtained < 0 || $marks_obtained > $marks_max) {
+        $error = "Marks must be between 0 and " . $marks_max;
     } else {
-        // Check if marks entry already exists for this student and subject
-        $stmt = $conn->prepare("SELECT id FROM marks WHERE student_id = ? AND subject_id = ?");
-        $stmt->bind_param("ii", $student_id, $subject_id);
+        // Calculate grade based on percentage
+        $percentage = ($marks_obtained / $marks_max) * 100;
+        $grade = '';
+        
+        if ($percentage >= 90) {
+            $grade = 'A+';
+        } elseif ($percentage >= 80) {
+            $grade = 'A';
+        } elseif ($percentage >= 70) {
+            $grade = 'B';
+        } elseif ($percentage >= 60) {
+            $grade = 'C';
+        } elseif ($percentage >= 50) {
+            $grade = 'D';
+        } else {
+            $grade = 'F';
+        }
+        
+        // Check if marks entry already exists for this student, subject, and exam
+        $stmt = $conn->prepare("SELECT id FROM marks WHERE student_id = ? AND subject_id = ? AND exam_id = ?");
+        $stmt->bind_param("iii", $student_id, $subject_id, $exam_id);
         $stmt->execute();
         $result = $stmt->get_result();
         
         if ($result->num_rows > 0) {
             // Update existing marks
             $marks_id = $result->fetch_assoc()['id'];
-            $stmt = $conn->prepare("UPDATE marks SET marks = ?, exam_date = ?, remarks = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $stmt->bind_param("dssi", $marks, $exam_date, $remarks, $marks_id);
+            $stmt = $conn->prepare("UPDATE marks SET marks_obtained = ?, marks_max = ?, grade = ?, remarks = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->bind_param("ddssi", $marks_obtained, $marks_max, $grade, $remarks, $marks_id);
             
             if ($stmt->execute()) {
                 $success = "Marks updated successfully";
@@ -46,9 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_marks'])) {
             }
         } else {
             // Insert new marks
-            $stmt = $conn->prepare("INSERT INTO marks (student_id, subject_id, marks, exam_date, remarks, created_at, updated_at) 
-                                   VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
-            $stmt->bind_param("iidss", $student_id, $subject_id, $marks, $exam_date, $remarks);
+            $created_by = $_SESSION['user_id']; // Assuming you store this in session
+            $stmt = $conn->prepare("INSERT INTO marks (student_id, subject_id, exam_id, marks_obtained, marks_max, grade, remarks, created_by, created_at, updated_at) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
+            $stmt->bind_param("iiiddsis", $student_id, $subject_id, $exam_id, $marks_obtained, $marks_max, $grade, $remarks, $created_by);
             
             if ($stmt->execute()) {
                 $success = "Marks added successfully";
@@ -82,40 +102,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_marks'])) {
 // Function to generate/update result for a student
 function generateResult($conn, $student_id) {
     // Get all marks for the student
-    $stmt = $conn->prepare("SELECT subject_id, marks FROM marks WHERE student_id = ?");
+    $stmt = $conn->prepare("SELECT subject_id, marks_obtained, marks_max FROM marks WHERE student_id = ?");
     $stmt->bind_param("i", $student_id);
     $stmt->execute();
     $marks_result = $stmt->get_result();
     
     if ($marks_result->num_rows > 0) {
-        $total_marks = 0;
+        $total_obtained = 0;
+        $total_max = 0;
         $subject_count = 0;
         
         // Calculate total and average
         while ($mark = $marks_result->fetch_assoc()) {
-            $total_marks += $mark['marks'];
+            $total_obtained += $mark['marks_obtained'];
+            $total_max += $mark['marks_max'];
             $subject_count++;
         }
         
-        $average = $subject_count > 0 ? ($total_marks / $subject_count) : 0;
+        $percentage = ($total_obtained / $total_max) * 100;
         
-        // Determine grade and result status based on average
+        // Determine grade and result status based on percentage
         $grade = '';
         $result_status = '';
         
-        if ($average >= 90) {
+        if ($percentage >= 90) {
             $grade = 'A+';
             $result_status = 'PASS';
-        } elseif ($average >= 80) {
+        } elseif ($percentage >= 80) {
             $grade = 'A';
             $result_status = 'PASS';
-        } elseif ($average >= 70) {
+        } elseif ($percentage >= 70) {
             $grade = 'B';
             $result_status = 'PASS';
-        } elseif ($average >= 60) {
+        } elseif ($percentage >= 60) {
             $grade = 'C';
             $result_status = 'PASS';
-        } elseif ($average >= 50) {
+        } elseif ($percentage >= 50) {
             $grade = 'D';
             $result_status = 'PASS';
         } else {
@@ -133,13 +155,13 @@ function generateResult($conn, $student_id) {
             // Update existing results
             $result_id = $result->fetch_assoc()['id'];
             $stmt = $conn->prepare("UPDATE results SET total_marks = ?, average = ?, grade = ?, result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $stmt->bind_param("ddssi", $total_marks, $average, $grade, $result_status, $result_id);
+            $stmt->bind_param("ddssi", $total_obtained, $percentage, $grade, $result_status, $result_id);
             $stmt->execute();
         } else {
             // Insert new results
             $stmt = $conn->prepare("INSERT INTO results (student_id, total_marks, average, grade, result, created_at, updated_at) 
                                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
-            $stmt->bind_param("iddss", $student_id, $total_marks, $average, $grade, $result_status);
+            $stmt->bind_param("iddss", $student_id, $total_obtained, $percentage, $grade, $result_status);
             $stmt->execute();
         }
     }
@@ -147,9 +169,10 @@ function generateResult($conn, $student_id) {
 
 // Get all students
 $students = [];
-$student_query = "SELECT s.id, s.student_id, s.class, s.section, u.name as student_name 
+$student_query = "SELECT s.id, s.student_id, s.class, s.section, u.full_name as student_name 
                   FROM students s 
                   JOIN users u ON s.user_id = u.id 
+                  WHERE u.status = 'active'
                   ORDER BY s.student_id ASC";
 $student_result = $conn->query($student_query);
 if ($student_result && $student_result->num_rows > 0) {
@@ -168,17 +191,29 @@ if ($subject_result->num_rows > 0) {
     }
 }
 
+// Get all exams
+$exams = [];
+$exam_query = "SELECT id, exam_name, exam_date, description FROM exams ORDER BY exam_date DESC";
+$exam_result = $conn->query($exam_query);
+if ($exam_result && $exam_result->num_rows > 0) {
+    while ($row = $exam_result->fetch_assoc()) {
+        $exams[] = $row;
+    }
+}
+
 // Get all marks with student and subject details
 $marks_data = [];
-$marks_query = "SELECT m.id, m.student_id, m.marks, m.exam_date, m.remarks, m.created_at, 
+$marks_query = "SELECT m.id, m.student_id, m.marks_obtained, m.marks_max, m.grade, m.exam_id, m.remarks, m.created_at, 
                        s.student_id as student_roll, s.class, s.section, 
-                       u.name as student_name,
-                       sub.subject_name, sub.subject_code, sub.class as subject_class
+                       u.full_name as student_name,
+                       sub.subject_name, sub.subject_code, sub.class as subject_class,
+                       e.exam_name, e.exam_date
                 FROM marks m
                 JOIN students s ON m.student_id = s.id
                 JOIN users u ON s.user_id = u.id
                 JOIN subjects sub ON m.subject_id = sub.id
-                ORDER BY s.student_id ASC, sub.subject_name ASC";
+                JOIN exams e ON m.exam_id = e.id
+                ORDER BY e.exam_date DESC, s.student_id ASC, sub.subject_name ASC";
 $marks_result = $conn->query($marks_query);
 if ($marks_result && $marks_result->num_rows > 0) {
     while ($row = $marks_result->fetch_assoc()) {
@@ -269,18 +304,28 @@ include_once '../includes/header.php';
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-4">
-                                <label for="marks">Marks <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="marks" name="marks" min="0" max="100" step="0.01" required>
-                                <small class="form-text text-muted">Enter marks between 0 and 100</small>
+                                <label for="exam_id">Exam <span class="text-danger">*</span></label>
+                                <select class="form-control" id="exam_id" name="exam_id" required>
+                                    <option value="">Select Exam</option>
+                                    <?php foreach ($exams as $exam): ?>
+                                        <option value="<?php echo $exam['id']; ?>">
+                                            <?php echo htmlspecialchars($exam['exam_name'] . ' (' . date('d M Y', strtotime($exam['exam_date'])) . ')'); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="form-group col-md-4">
-                                <label for="exam_date">Exam Date <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="exam_date" name="exam_date" required>
+                                <label for="marks_obtained">Marks Obtained <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="marks_obtained" name="marks_obtained" min="0" max="100" step="0.01" required>
                             </div>
                             <div class="form-group col-md-4">
-                                <label for="remarks">Remarks</label>
-                                <input type="text" class="form-control" id="remarks" name="remarks" placeholder="Optional remarks">
+                                <label for="marks_max">Maximum Marks <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="marks_max" name="marks_max" min="1" step="0.01" value="100" required>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="remarks">Remarks</label>
+                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="Optional remarks">
                         </div>
                         <button type="submit" name="add_marks" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Marks
@@ -303,10 +348,10 @@ include_once '../includes/header.php';
                                 <tr>
                                     <th>Student ID</th>
                                     <th>Student Name</th>
-                                    <th>Subject (Code)</th>
-                                    <th>Class</th>
+                                    <th>Subject</th>
+                                    <th>Exam</th>
                                     <th>Marks</th>
-                                    <th>Exam Date</th>
+                                    <th>Grade</th>
                                     <th>Remarks</th>
                                     <th>Actions</th>
                                 </tr>
@@ -318,26 +363,30 @@ include_once '../includes/header.php';
                                             <td><?php echo htmlspecialchars($mark['student_roll']); ?></td>
                                             <td><?php echo htmlspecialchars($mark['student_name'] . ' (' . $mark['class'] . '-' . $mark['section'] . ')'); ?></td>
                                             <td><?php echo htmlspecialchars($mark['subject_name'] . ' (' . $mark['subject_code'] . ')'); ?></td>
-                                            <td><?php echo htmlspecialchars($mark['subject_class']); ?></td>
+                                            <td><?php echo htmlspecialchars($mark['exam_name'] . ' (' . date('d M Y', strtotime($mark['exam_date'])) . ')'); ?></td>
                                             <td>
                                                 <?php 
-                                                    $mark_value = floatval($mark['marks']);
+                                                    $percentage = ($mark['marks_obtained'] / $mark['marks_max']) * 100;
                                                     $badge_class = 'secondary';
-                                                    if ($mark_value >= 90) {
+                                                    if ($percentage >= 90) {
                                                         $badge_class = 'success';
-                                                    } elseif ($mark_value >= 70) {
+                                                    } elseif ($percentage >= 70) {
                                                         $badge_class = 'primary';
-                                                    } elseif ($mark_value >= 50) {
+                                                    } elseif ($percentage >= 50) {
                                                         $badge_class = 'warning';
-                                                    } elseif ($mark_value < 50) {
+                                                    } elseif ($percentage < 50) {
                                                         $badge_class = 'danger';
                                                     }
                                                 ?>
                                                 <span class="badge badge-<?php echo $badge_class; ?> marks-badge">
-                                                    <?php echo $mark_value; ?>
+                                                    <?php echo $mark['marks_obtained'] . '/' . $mark['marks_max'] . ' (' . number_format($percentage, 1) . '%)'; ?>
                                                 </span>
                                             </td>
-                                            <td><?php echo date('d M Y', strtotime($mark['exam_date'])); ?></td>
+                                            <td>
+                                                <span class="badge badge-info">
+                                                    <?php echo $mark['grade']; ?>
+                                                </span>
+                                            </td>
                                             <td><?php echo !empty($mark['remarks']) ? htmlspecialchars($mark['remarks']) : '<span class="text-muted">-</span>'; ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-primary edit-marks-btn" 
