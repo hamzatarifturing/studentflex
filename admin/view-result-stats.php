@@ -27,85 +27,68 @@ include_once '../includes/header.php';
 ?>
 
 <!-- Main Content -->
-<div>
-<div class="d-sm-flex align-items-center justify-content-between mb-4">
-<h1>
-Result Statistics
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Result Statistics</h1>
+    </div>
 
-</h1>
-</div>
-<!-- Stats Cards -->
-<div>
-    <!-- Students Card -->
-    <div class="col-xl-6 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Total Students
-</div>
-<div>
-<?php echo $totalStudents; ?>
-</div>
+    <!-- Stats Cards -->
+    <div class="row">
+        <!-- Students Card -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Students
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $totalStudents; ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
                     </div>
-<div>
-<i class="fas fa-users fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
 
-</div>
+        <!-- Exams Card -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Exams Conducted
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $totalExams; ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Exams Card -->
-<div>
-        <div class="card border-left-success shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Exams Conducted
-</div>
-<div>
-<?php echo $totalExams; ?>
-</div>
-                    </div>
-<div>
-<i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-
-</div>
+    <!-- Information Box -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Results Overview</h6>
+                </div>
+                <div class="card-body">
+                    <p>Welcome to the Result Statistics Dashboard. Here you can see the current state of your academic records.</p>
+                    <p>This dashboard provides an overview of the total number of students registered in the system and the total number of exams conducted to date.</p>
+                    <p>For more detailed analysis, use the other reports available in the admin section.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<!-- End of Main Content -->
 
-<!-- Information Box -->
-<div>
-    <div class="col-12">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-<h6>
-Results Overview
-
-</h6>
-</div>
-<div>
-<p>
-Welcome to the Result Statistics Dashboard. Here you can see the current state of your academic records.
-
-</p>
-<p>
-This dashboard provides an overview of the total number of students registered in the system and the total number of exams conducted to date.
-
-</p>
-<p>
-For more detailed analysis, use the other reports available in the admin section.
-
-</p>
-</div>
-        </div>
-    </div>
-</div>
-</div> <!-- End of Main Content --> <?php include_once '../includes/footer.php'; ?>
+<?php include_once '../includes/footer.php'; ?>
