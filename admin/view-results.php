@@ -130,7 +130,31 @@ $page_title = 'View Results';
 // Include header
 include_once '../includes/header.php';
 ?>
+<style>
+    .no-records-message {
+    padding: 25px;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    color: #495057;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
+.no-records-message .message-icon {
+    color: #17a2b8;
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.no-records-message span {
+    font-weight: 500;
+}
+    </style>
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
@@ -340,7 +364,7 @@ include_once '../includes/header.php';
                                         <td colspan="14" class="text-center">
                                             <?php 
                                             if ($selected_student > 0) {
-                                                echo "No mark entries found for the selected student.";
+                                                echo "<h4 class='no-records-message'><i class=\"fa fa-info-circle message-icon\"></i> No mark entries found for the selected student.</h4>";
                                             } else {
                                                 echo "No mark entries found.";
                                             }
