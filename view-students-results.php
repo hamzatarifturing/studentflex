@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
     $student_id = mysqli_real_escape_string($conn, $student_id);
     
     // Query to get student information
-    $query = "SELECT s.*, u.name, u.email, u.phone
+    $query = "SELECT s.*, u.full_name, u.email, u.username, u.role, u.status
               FROM students s
               JOIN users u ON s.user_id = u.id
               WHERE s.student_id = '$student_id'";
@@ -200,15 +200,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
                             <div class="col-md-6">
                                 <h5 class="border-bottom pb-2 mb-3">Personal Information</h5>
                                 <p><strong><i class="fas fa-id-card me-2"></i>Student ID:</strong> <?php echo htmlspecialchars($student['student_id']); ?></p>
-                                <p><strong><i class="fas fa-user me-2"></i>Name:</strong> <?php echo htmlspecialchars($student['name']); ?></p>
+                                <p><strong><i class="fas fa-user me-2"></i>Full Name:</strong> <?php echo htmlspecialchars($student['full_name']); ?></p>
+                                <p><strong><i class="fas fa-user-circle me-2"></i>Username:</strong> <?php echo htmlspecialchars($student['username']); ?></p>
                                 <p><strong><i class="fas fa-envelope me-2"></i>Email:</strong> <?php echo htmlspecialchars($student['email']); ?></p>
-                                <p><strong><i class="fas fa-phone me-2"></i>Phone:</strong> <?php echo htmlspecialchars($student['phone']); ?></p>
+                                <p><strong><i class="fas fa-user-shield me-2"></i>Role:</strong> 
+                                    <span class="badge bg-<?php echo $student['role'] == 'admin' ? 'danger' : 'success'; ?>">
+                                        <?php echo ucfirst(htmlspecialchars($student['role'])); ?>
+                                    </span>
+                                </p>
+                                <p><strong><i class="fas fa-toggle-on me-2"></i>Status:</strong> 
+                                    <span class="badge bg-<?php echo $student['status'] == 'active' ? 'success' : 'secondary'; ?>">
+                                        <?php echo ucfirst(htmlspecialchars($student['status'])); ?>
+                                    </span>
+                                </p>
                             </div>
                             <div class="col-md-6">
                                 <h5 class="border-bottom pb-2 mb-3">Academic Information</h5>
                                 <p><strong><i class="fas fa-school me-2"></i>Class:</strong> <?php echo htmlspecialchars($student['class']); ?></p>
                                 <p><strong><i class="fas fa-users me-2"></i>Section:</strong> <?php echo htmlspecialchars($student['section']); ?></p>
-                                <p><strong><i class="fas fa-calendar me-2"></i>Registered On:</strong> <?php echo date('F d, Y', strtotime($student['created_at'])); ?></p>
+                                <p><strong><i class="fas fa-calendar-alt me-2"></i>Account Created:</strong> <?php echo date('F d, Y', strtotime($student['created_at'])); ?></p>
+                                <p><strong><i class="fas fa-clock me-2"></i>Last Updated:</strong> <?php echo date('F d, Y h:i A', strtotime($student['updated_at'])); ?></p>
                             </div>
                         </div>
                         <div class="alert alert-info mt-3">
