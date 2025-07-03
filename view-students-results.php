@@ -561,76 +561,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
     </div>
 </div>
 <!-- End Student Performance Summary Card -->
-<!-- Student Marks Graph Container -->
-<div>
-<h3>
-Student Performance
 
-</h3>
-<div style="width: 80%; margin: 0 auto;">
-<canvas id="marksChart"></canvas>
+<!-- Graph Container Code -->
+<div class="graph-container">
+    <h3>Student Performance</h3>
+    <div style="width: 80%; margin: 0 auto;">
+        <canvas id="marksChart"></canvas>
+    </div>
+</div>
 
-</div>
-</div>
+<!-- Chart.js Implementation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-// Dummy data - replace with actual data from database
-const subjects = ['Mathematics', 'Science', 'English', 'History', 'Computer'];
-const marks = [85, 72, 90, 65, 78];
-const maxMarks = [100, 100, 100, 100, 100];
-
-// Calculate percentages
-const percentages = marks.map((mark, index) => 
-    ((mark / maxMarks[index]) * 100).toFixed(1));
-
-// Create chart
-const ctx = document.getElementById('marksChart').getContext('2d');
-const marksChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: subjects,
-        datasets: [{
-            label: 'Marks Obtained',
-            data: marks,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }, {
-            label: 'Maximum Marks',
-            data: maxMarks,
-            backgroundColor: 'rgba(220, 220, 220, 0.7)',
-            borderColor: 'rgba(220, 220, 220, 1)',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100
-            }
+    // Dummy data - replace with actual data from database
+    const subjects = ['Mathematics', 'Science', 'English', 'History', 'Computer'];
+    const marks = [85, 72, 90, 65, 78];
+    const maxMarks = [100, 100, 100, 100, 100];
+    
+    // Calculate percentages
+    const percentages = marks.map((mark, index) => 
+        ((mark / maxMarks[index]) * 100).toFixed(1));
+    
+    // Create chart
+    const ctx = document.getElementById('marksChart').getContext('2d');
+    const marksChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: subjects,
+            datasets: [{
+                label: 'Marks Obtained',
+                data: marks,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Maximum Marks',
+                data: maxMarks,
+                backgroundColor: 'rgba(220, 220, 220, 0.7)',
+                borderColor: 'rgba(220, 220, 220, 1)',
+                borderWidth: 1
+            }]
         },
-        plugins: {
-            title: {
-                display: true,
-                text: 'Subject-wise Performance'
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
             },
-            tooltip: {
-                callbacks: {
-                    afterLabel: function(context) {
-                        const dataIndex = context.dataIndex;
-                        return `Percentage: ${percentages[dataIndex]}%`;
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Subject-wise Performance'
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const dataIndex = context.dataIndex;
+                            return `Percentage: ${percentages[dataIndex]}%`;
+                        }
                     }
                 }
             }
         }
-    }
+    });
 });
-});
-
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <footer class="bg-dark text-white mt-5 py-4">
         <div class="container">
             <div class="row">
