@@ -437,6 +437,256 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
             </div>
         </div>
     </div>
+    
+    <!-- Student Performance Summary Card -->
+<div>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+<h5>
+<i class="fas fa-chart-line me-2"></i>
+
+                    Performance Summary
+</h5>
+</div>
+<div>
+                <?php if (isset($marks) && !empty($marks)): ?>
+                    <?php
+                        // Initialize variables to track max and min marks
+                        $maxMark = 0;
+                        $maxSubject = '';
+                        $maxPercentage = 0;
+                        $maxExam = '';
+                        
+                        $minMark = 101; // Start with value higher than possible
+                        $minSubject = '';
+                        $minPercentage = 100;
+                        $minExam = '';
+                        
+                        $overallTotal = 0;
+                        $overallMax = 0;
+                        $examCount = 0;
+                        
+                        // Loop through all exams and subjects to find max and min
+                        foreach ($marks as $examId => $examData) {
+                            foreach ($examData['subjects'] as $subject) {
+                                $percentage = ($subject['marks_obtained'] / $subject['marks_max']) * 100;
+                                
+                                // Check for max mark
+                                if ($percentage > $maxPercentage) {
+                                    $maxMark = $subject['marks_obtained'];
+                                    $maxSubject = $subject['subject_name'];
+                                    $maxPercentage = $percentage;
+                                    $maxExam = $examData['exam_name'];
+                                }
+                                
+                                // Check for min mark
+                                if ($percentage < $minPercentage) {
+                                    $minMark = $subject['marks_obtained'];
+                                    $minSubject = $subject['subject_name'];
+                                    $minPercentage = $percentage;
+                                    $minExam = $examData['exam_name'];
+                                }
+                            }
+                            
+                            // Calculate overall statistics for this exam
+                            if (isset($results[$examId])) {
+                                $overallTotal += $results[$examId]['percentage'];
+                                $examCount++;
+                            }
+                        }
+                        
+                        // Calculate average percentage if we have exams
+                        $averagePercentage = ($examCount > 0) ? ($overallTotal / $examCount) : 0;
+                    ?>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+<i class="fas fa-award me-2"></i>
+
+Highest Performance
+
+</div>
+<div>
+<h5>
+<?php echo htmlspecialchars($maxSubject); ?>
+</h5>
+<p>
+<strong>
+Score:
+
+</strong>
+<?php echo $maxMark; ?><br>
+<strong>
+Percentage:
+
+</strong>
+<?php echo number_format($maxPercentage, 2); ?>%<br>
+<strong>
+Exam:
+
+</strong>
+<?php echo htmlspecialchars($maxExam); ?>
+</p>
+</div>
+                            </div>
+                        </div>
+<div>
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+<i class="fas fa-chart-pie me-2"></i>
+
+Average Performance
+
+</div>
+<div>
+<h5>
+Overall Average
+
+</h5>
+<p>
+<strong>
+Average:
+
+</strong>
+<?php echo number_format($averagePercentage, 2); ?>%<br>
+<strong>
+Exams Taken:
+
+</strong>
+<?php echo $examCount; ?><br>
+<strong>
+Performance Level:
+
+</strong>
+                                        <?php
+                                            if ($averagePercentage >= 80) echo '
+<span>
+Excellent
+
+</span>
+';
+elseif ($averagePercentage >= 65) echo '
+
+<span>
+Good
+
+</span>
+';
+elseif ($averagePercentage >= 50) echo '
+
+<span>
+Satisfactory
+
+</span>
+';
+elseif ($averagePercentage >= 40) echo '
+
+<span>
+Average
+
+</span>
+';
+else echo '
+
+<span>
+Below Average
+
+</span>
+';
+?>
+
+</p>
+</div>
+                            </div>
+                        </div>
+<div>
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger text-white">
+<i class="fas fa-exclamation-triangle me-2"></i>
+
+Lowest Performance
+
+</div>
+<div>
+<h5>
+<?php echo htmlspecialchars($minSubject); ?>
+</h5>
+<p>
+<strong>
+Score:
+
+</strong>
+<?php echo $minMark; ?><br>
+<strong>
+Percentage:
+
+</strong>
+<?php echo number_format($minPercentage, 2); ?>%<br>
+<strong>
+Exam:
+
+</strong>
+<?php echo htmlspecialchars($minExam); ?>
+</p>
+</div>
+                            </div>
+                        </div>
+                    </div>
+<div>
+<h6>
+Improvement Areas:
+
+</h6>
+                        <div class="border rounded p-3 bg-light">
+                            <?php if ($minPercentage < 40): ?>
+<p>
+<i class="fas fa-triangle-exclamation text-danger me-2"></i>
+
+                                    Focus on improving performance in
+<strong>
+<?php echo htmlspecialchars($minSubject); ?>
+</strong>
+.
+Consider dedicating more study time to this subject or seeking additional help.
+
+</p>
+                            <?php elseif ($minPercentage < 60): ?>
+<p>
+<i class="fas fa-info-circle text-warning me-2"></i>
+
+                                    Your performance in
+<strong>
+<?php echo htmlspecialchars($minSubject); ?>
+</strong>
+could use some improvement.
+Review the subject material and practice regularly.
+
+</p>
+                            <?php else: ?>
+<p>
+<i class="fas fa-check-circle text-success me-2"></i>
+
+                                    You're performing well across all subjects. Continue maintaining consistent study habits.
+</p>
+                            <?php endif; ?>
+</div>
+                    </div>
+                <?php else: ?>
+<div>
+<i class="fas fa-info-circle me-2"></i>
+
+                        No performance data available. Results may not be published yet.
+</div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
 
     <footer class="bg-dark text-white mt-5 py-4">
         <div class="container">
