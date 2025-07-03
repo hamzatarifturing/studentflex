@@ -611,6 +611,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const percentages = marks.map((mark, index) => 
         ((mark / maxMarks[index]) * 100).toFixed(1));
     
+    // Create dynamic bar colors based on performance (red for <50%)
+    const barBackgroundColors = marks.map((mark, index) => {
+        const percentage = (mark / maxMarks[index]) * 100;
+        return percentage < 50 ? 'rgba(255, 99, 132, 0.7)' : 'rgba(54, 162, 235, 0.7)';
+    });
+    
+    const barBorderColors = marks.map((mark, index) => {
+        const percentage = (mark / maxMarks[index]) * 100;
+        return percentage < 50 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)';
+    });
+    
     // Create chart
     const ctx = document.getElementById('marksChart').getContext('2d');
     const marksChart = new Chart(ctx, {
@@ -620,8 +631,8 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Marks Obtained',
                 data: marks,
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: barBackgroundColors,
+                borderColor: barBorderColors,
                 borderWidth: 1
             }, {
                 label: 'Maximum Marks',
@@ -648,9 +659,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     callbacks: {
                         afterLabel: function(context) {
                             const dataIndex = context.dataIndex;
+                            const percentage = parseFloat(percentages[dataIndex]);
+                            let performanceStatus = '';
+                            
+                            if (percentage < 50) {
+                                performanceStatus = '⚠️ Below Passing Threshold';
+                            } else if (percentage >= 75) {
+                                performanceStatus = '✅ Excellent';
+                            } else {
+                                performanceStatus = '✓ Passing';
+                            }
+                            
                             return [
                                 `Percentage: ${percentages[dataIndex]}%`,
-                                `Exam: ${examNames[dataIndex]}`
+                                `Exam: ${examNames[dataIndex]}`,
+                                `Status: ${performanceStatus}`
                             ];
                         }
                     }
