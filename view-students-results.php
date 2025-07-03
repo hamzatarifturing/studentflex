@@ -573,10 +573,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
 <!-- Chart.js Implementation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Dummy data - replace with actual data from database
-    const subjects = ['Mathematics', 'Science', 'English', 'History', 'Computer'];
-    const marks = [85, 72, 90, 65, 78];
-    const maxMarks = [100, 100, 100, 100, 100];
+    <?php
+    // Reset pointer to beginning of result set
+    if ($marksResult && mysqli_num_rows($marksResult) > 0) {
+        mysqli_data_seek($marksResult, 0);
+        
+        // Initialize arrays to hold chart data
+        $subjects = [];
+        $marks = [];
+        $maxMarks = [];
+        $examNames = [];
+        $subjectCodes = [];
+        
+        // Process query results for chart data
+        while ($mark = mysqli_fetch_assoc($marksResult)) {
+            $subjects[] = $mark['subject_name'];
+            $marks[] = $mark['marks_obtained'];
+            $maxMarks[] = $mark['exam_max_marks'];
+            $examNames[] = $mark['exam_name'];
+            $subjectCodes[] = $mark['subject_code'];
+        }
+        
+        // Reset pointer again for other uses of $marksResult
+        mysqli_data_seek($marksResult, 0);
+    ?>
+    
+    // Real data from database
+    const subjects = <?php echo json_encode(array_map(function($subj, $code) { 
+        return "$subj ($code)"; 
+    }, $subjects, $subjectCodes)); ?>;
+    
+    const marks = <?php echo json_encode(array_map('intval', $marks)); ?>;
+    const maxMarks = <?php echo json_encode(array_map('intval', $maxMarks)); ?>;
+    const examNames = <?php echo json_encode($examNames); ?>;
     
     // Calculate percentages
     const percentages = marks.map((mark, index) => 
@@ -607,25 +636,54 @@ document.addEventListener('DOMContentLoaded', function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: Math.max(...maxMarks) + 10 // Dynamic max value based on data
                 }
             },
             plugins: {
                 title: {
                     display: true,
-                    text: 'Subject-wise Performance'
+                    text: 'Subject Performance Analysis'
                 },
                 tooltip: {
                     callbacks: {
                         afterLabel: function(context) {
                             const dataIndex = context.dataIndex;
-                            return `Percentage: ${percentages[dataIndex]}%`;
+                            return [
+                                `Percentage: ${percentages[dataIndex]}%`,
+                                `Exam: ${examNames[dataIndex]}`
+                            ];
                         }
                     }
                 }
             }
         }
     });
+    <?php } else { ?>
+    // No marks data available - show empty chart with message
+    const ctx = document.getElementById('marksChart').getContext('2d');
+    const marksChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['No Data'],
+            datasets: [{
+                label: 'No marks data available',
+                data: [0],
+                backgroundColor: 'rgba(200, 200, 200, 0.7)',
+                borderColor: 'rgba(200, 200, 200, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'No marks data available for this student'
+                }
+            }
+        }
+    });
+    <?php } ?>
 });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
