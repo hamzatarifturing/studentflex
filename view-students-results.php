@@ -1,6 +1,34 @@
 <?php
 // view-students-results.php
 // Public-facing page for students to view their results without login required
+
+// Include database connection
+include 'config/db.php';
+
+// Process form submission
+$student = null;
+$error = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
+    $student_id = $_POST['student_id'];
+    
+    // Sanitize the input to prevent SQL injection
+    $student_id = mysqli_real_escape_string($conn, $student_id);
+    
+    // Query to get student information
+    $query = "SELECT s.*, u.name, u.email, u.phone
+              FROM students s
+              JOIN users u ON s.user_id = u.id
+              WHERE s.student_id = '$student_id'";
+    echo $query ;
+    $result = mysqli_query($conn, $query);
+    
+    if ($result && mysqli_num_rows($result) > 0) {
+        $student = mysqli_fetch_assoc($result);
+    } else {
+        $error = "No student found with ID: $student_id";
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,7 +43,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         #result-form-container {
-            display: none;
+            display: <?php echo (isset($_POST['student_id']) && !$student) ? 'block' : 'none'; ?>;
             transition: all 0.3s ease-in-out;
         }
         .animate-fade {
@@ -128,11 +156,17 @@
                         <h4 class="mb-0"><i class="fas fa-search me-2"></i>Search Your Results</h4>
                     </div>
                     <div class="card-body">
-                        <form id="result-search-form" method="post" action="#">
+                        <?php if ($error): ?>
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?>
+                            </div>
+                        <?php endif; ?>
+                        <form id="result-search-form" method="post" action="">
                             <div class="mb-3">
                                 <label for="student_id" class="form-label">Student ID</label>
                                 <input type="text" class="form-control" id="student_id" name="student_id" 
-                                       placeholder="Enter your student ID" required>
+                                       placeholder="Enter your student ID" value="<?php echo isset($_POST['student_id']) ? htmlspecialchars($_POST['student_id']) : ''; ?>"
+                                       required>
                                 <small class="form-text text-muted">
                                     Enter your student ID to view your academic results.
                                 </small>
@@ -151,7 +185,42 @@
             </div>
         </div>
         
-        <!-- Results will be displayed here in the future -->
+        <!-- Student Information -->
+        <?php if ($student): ?>
+        <div class="row mt-4">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow-sm animate-fade">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-graduate me-2"></i>Student Information
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2 mb-3">Personal Information</h5>
+                                <p><strong><i class="fas fa-id-card me-2"></i>Student ID:</strong> <?php echo htmlspecialchars($student['student_id']); ?></p>
+                                <p><strong><i class="fas fa-user me-2"></i>Name:</strong> <?php echo htmlspecialchars($student['name']); ?></p>
+                                <p><strong><i class="fas fa-envelope me-2"></i>Email:</strong> <?php echo htmlspecialchars($student['email']); ?></p>
+                                <p><strong><i class="fas fa-phone me-2"></i>Phone:</strong> <?php echo htmlspecialchars($student['phone']); ?></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2 mb-3">Academic Information</h5>
+                                <p><strong><i class="fas fa-school me-2"></i>Class:</strong> <?php echo htmlspecialchars($student['class']); ?></p>
+                                <p><strong><i class="fas fa-users me-2"></i>Section:</strong> <?php echo htmlspecialchars($student['section']); ?></p>
+                                <p><strong><i class="fas fa-calendar me-2"></i>Registered On:</strong> <?php echo date('F d, Y', strtotime($student['created_at'])); ?></p>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Academic results will be shown here in future updates.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <div id="results-container" class="mt-4"></div>
     </div>
 
@@ -178,7 +247,6 @@
             const checkResultsBtn = document.getElementById('check-results-btn');
             const resultFormContainer = document.getElementById('result-form-container');
             const cancelSearchBtn = document.getElementById('cancel-search');
-            const resultSearchForm = document.getElementById('result-search-form');
             
             // Show form when button is clicked
             checkResultsBtn.addEventListener('click', function() {
@@ -190,13 +258,6 @@
             // Hide form when cancel button is clicked
             cancelSearchBtn.addEventListener('click', function() {
                 resultFormContainer.style.display = 'none';
-            });
-            
-            // Prevent form submission for now (will be implemented later)
-            resultSearchForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                alert('This feature will be implemented soon. Thank you for your patience!');
-                // Form submission logic will be added in future updates
             });
         });
     </script>
