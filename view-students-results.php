@@ -107,6 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
             100% { opacity: 1; }
         }
         
+        /* Style for failed subjects */
+        .failed-subject {
+            background-color: rgba(255, 0, 0, 0.1);
+        }
+        
         /* Print styling */
         @media print {
             body {
@@ -161,6 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
                 background-color: white !important;
                 color: black !important;
                 border: 1px solid #ddd !important;
+            }
+            
+            /* Print styling for failed rows */
+            .failed-subject {
+                background-color: rgba(255, 0, 0, 0.1) !important;
+                color: #d9534f !important;
             }
             
             /* Add school letterhead style */
@@ -346,8 +357,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
                                                                 // Determine status
                                                                 $status = ($percentage >= 40) ? 'Pass' : 'Fail';
                                                                 $statusClass = ($status == 'Pass') ? 'success' : 'danger';
+                                                                
+                                                                // Add class for failed subjects - highlighting the entire row
+                                                                $rowClass = ($status == 'Fail') ? 'failed-subject' : '';
                                                             ?>
-                                                            <tr>
+                                                            <tr class="<?php echo $rowClass; ?>">
                                                                 <td><?php echo $count++; ?></td>
                                                                 <td><?php echo htmlspecialchars($subject['subject_code']); ?></td>
                                                                 <td><?php echo htmlspecialchars($subject['subject_name']); ?></td>
@@ -358,7 +372,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
                                                                 <td><span class="badge bg-<?php echo $statusClass; ?>"><?php echo $status; ?></span></td>
                                                             </tr>
                                                         <?php endforeach; ?>
-                                                        <tr class="table-info fw-bold">
+                                                        
+                                                        <?php
+                                                            // Check if overall result is fail
+                                                            $overallStatus = 'pass';
+                                                            if (isset($results[$examId])) {
+                                                                $overallStatus = $results[$examId]['result_status'];
+                                                            } else {
+                                                                // If no result record, calculate based on percentage
+                                                                $overallPercentage = ($totalMarks / $totalMaxMarks) * 100;
+                                                                $overallStatus = ($overallPercentage >= 40) ? 'pass' : 'fail';
+                                                            }
+                                                            
+                                                            // Add class for overall failed exam
+                                                            $totalRowClass = ($overallStatus == 'fail') ? 'failed-subject' : 'table-info';
+                                                        ?>
+                                                        <tr class="<?php echo $totalRowClass; ?> fw-bold">
                                                             <td colspan="3">Total</td>
                                                             <td><?php echo $totalMarks; ?></td>
                                                             <td><?php echo $totalMaxMarks; ?></td>
@@ -369,7 +398,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['student_id'])) {
                                                                         <?php echo ucfirst($results[$examId]['result_status']); ?>
                                                                     </span>
                                                                 <?php else: ?>
-                                                                    <span class="badge bg-warning">Pending</span>
+                                                                    <span class="badge bg-<?php echo ($overallStatus == 'pass') ? 'success' : 'danger'; ?>">
+                                                                        <?php echo ucfirst($overallStatus); ?>
+                                                                    </span>
                                                                 <?php endif; ?>
                                                             </td>
                                                         </tr>
