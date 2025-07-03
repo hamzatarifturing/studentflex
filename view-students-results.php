@@ -13,6 +13,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        #result-form-container {
+            display: none;
+            transition: all 0.3s ease-in-out;
+        }
+        .animate-fade {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -98,26 +111,48 @@
                             <li>Get timely notifications when new results are published</li>
                         </ul>
                         <p class="mt-3">
-                            <a href="#" class="btn btn-primary">
+                            <button id="check-results-btn" class="btn btn-primary">
                                 <i class="fas fa-search me-2"></i>Check Your Results
-                            </a>
+                            </button>
                         </p>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Coming Soon: Result Search Form -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="alert alert-info">
-                    <i class="fas fa-tools me-2"></i>
-                    <strong>Coming Soon:</strong> Our student result search functionality is under development.
-                    Soon you'll be able to search for your results using your student ID or name.
-                    Check back later!
+        <!-- Student Result Form -->
+        <div class="row mt-4" id="result-form-container">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow-sm animate-fade">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-search me-2"></i>Search Your Results</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="result-search-form" method="post" action="#">
+                            <div class="mb-3">
+                                <label for="student_id" class="form-label">Student ID</label>
+                                <input type="text" class="form-control" id="student_id" name="student_id" 
+                                       placeholder="Enter your student ID" required>
+                                <small class="form-text text-muted">
+                                    Enter your student ID to view your academic results.
+                                </small>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="fas fa-search me-2"></i> View Results
+                                </button>
+                                <button type="button" id="cancel-search" class="btn btn-secondary px-4 ms-2">
+                                    <i class="fas fa-times me-2"></i> Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Results will be displayed here in the future -->
+        <div id="results-container" class="mt-4"></div>
     </div>
 
     <footer class="bg-dark text-white mt-5 py-4">
@@ -137,5 +172,33 @@
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/script.js"></script>
+    <script>
+        // JavaScript for handling form display toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkResultsBtn = document.getElementById('check-results-btn');
+            const resultFormContainer = document.getElementById('result-form-container');
+            const cancelSearchBtn = document.getElementById('cancel-search');
+            const resultSearchForm = document.getElementById('result-search-form');
+            
+            // Show form when button is clicked
+            checkResultsBtn.addEventListener('click', function() {
+                resultFormContainer.style.display = 'block';
+                // Scroll to the form
+                resultFormContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Hide form when cancel button is clicked
+            cancelSearchBtn.addEventListener('click', function() {
+                resultFormContainer.style.display = 'none';
+            });
+            
+            // Prevent form submission for now (will be implemented later)
+            resultSearchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('This feature will be implemented soon. Thank you for your patience!');
+                // Form submission logic will be added in future updates
+            });
+        });
+    </script>
 </body>
 </html>
