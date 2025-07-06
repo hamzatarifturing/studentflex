@@ -5,6 +5,7 @@ require_once 'config/db.php';
 // Initialize variables
 $studentData = null;
 $resultData = null;
+$examData = null;
 $errorMessage = "";
 $showResults = false;
 
@@ -19,8 +20,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($studentId) || empty($resultMonth) || empty($resultYear)) {
         $errorMessage = "All fields are required!";
     } else {
-        // Fetch student information
-        $studentQuery = "SELECT * FROM students WHERE student_id = ?";
+        // Fetch student information (join with users table to get the full name)
+        $studentQuery = "SELECT s.*, u.full_name, u.email 
+                         FROM students s 
+                         JOIN users u ON s.user_id = u.id 
+                         WHERE s.student_id = ?";
         $stmt = $conn->prepare($studentQuery);
         $stmt->bind_param("s", $studentId);
         $stmt->execute();
@@ -29,28 +33,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($studentResult->num_rows > 0) {
             $studentData = $studentResult->fetch_assoc();
             
-            // Fetch exam results for the student
-            $resultsQuery = "SELECT m.*, s.subject_name 
-                             FROM marks m 
-                             JOIN subjects s ON m.subject_id = s.id 
-                             WHERE m.student_id = ? 
-                             AND m.exam_month = ? 
-                             AND m.exam_year = ?";
+            // Find exam that matches the month and year
+            $examQuery = "SELECT * FROM exams 
+                          WHERE MONTH(start_date) = ? 
+                          AND YEAR(start_date) = ? 
+                          AND class = ?";
             
-            $stmt = $conn->prepare($resultsQuery);
-            $stmt->bind_param("sss", $studentId, $resultMonth, $resultYear);
+            // Convert month name to number
+            $monthNumber = date('m', strtotime("$resultMonth 1, $resultYear"));
+            
+            $stmt = $conn->prepare($examQuery);
+            $stmt->bind_param("sss", $monthNumber, $resultYear, $studentData['class']);
             $stmt->execute();
-            $resultData = $stmt->get_result();
+            $examResult = $stmt->get_result();
             
-            if ($resultData->num_rows > 0) {
-                $showResults = true;
+            if ($examResult->num_rows > 0) {
+                $examData = $examResult->fetch_assoc();
+                
+                // Fetch subject marks for this student and exam
+                $marksQuery = "SELECT m.*, s.subject_name, s.subject_code 
+                               FROM marks m 
+                               JOIN subjects s ON m.subject_id = s.id 
+                               WHERE m.student_id = ? 
+                               AND m.exam_id = ?";
+                
+                $stmt = $conn->prepare($marksQuery);
+                $stmt->bind_param("ii", $studentData['id'], $examData['id']);
+                $stmt->execute();
+                $resultData = $stmt->get_result();
+                
+                // Check if overall result exists for this student and exam
+                $overallQuery = "SELECT * FROM results 
+                                 WHERE student_id = ? 
+                                 AND exam_id = ? 
+                                 AND is_published = 'yes'";
+                
+                $stmt = $conn->prepare($overallQuery);
+                $stmt->bind_param("ii", $studentData['id'], $examData['id']);
+                $stmt->execute();
+                $overallResult = $stmt->get_result();
+                
+                if ($resultData->num_rows > 0 && $overallResult->num_rows > 0) {
+                    $overallData = $overallResult->fetch_assoc();
+                    $showResults = true;
+                } else {
+                    $errorMessage = "No published results found for the selected month and year.";
+                }
             } else {
-                $errorMessage = "No results found for the selected month and year.";
+                $errorMessage = "No exam found for the selected month and year.";
             }
         } else {
             $errorMessage = "Student ID not found!";
         }
     }
+
 }
 ?>
 <!DOCTYPE html>
@@ -179,20 +215,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             background-color: #0b7dda;
         }
         
+        .remarks-section, .rank-section, .published-date {
+            margin-top: 20px;
+        }
+        
+        .remarks-section h4, .rank-section h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .published-date {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+            text-align: right;
+        }
+        
+        .result-summary {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        
         @media print {
-            .search-section, .print-btn, header {
+            .search-section, .print-btn, header, footer {
                 display: none;
             }
             
             .results-section {
                 border: none;
                 padding: 0;
+                margin-top: 0;
             }
             
             body {
-                font-size: 14px;
+                font-size: 12px;
+            }
+            
+            .student-info {
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            
+            .info-item {
+                margin-right: 20px;
+                margin-bottom: 5px;
+            }
+            
+            @page {
+                margin: 1cm;
             }
         }
+
     </style>
 </head>
 <body>
@@ -264,7 +337,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </form>
             </section>
             
-            <?php if ($showResults && $studentData && $resultData): ?>
+            <?php if ($showResults && $studentData && $resultData && $examData): ?>
             <section class="results-section" id="results">
                 <div class="student-info">
                     <h3>Student Information</h3>
@@ -275,17 +348,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         <div class="info-item">
                             <span class="info-label">Name:</span>
-                            <span><?php echo htmlspecialchars($studentData['name']); ?></span>
+                            <span><?php echo htmlspecialchars($studentData['full_name']); ?></span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Class:</span>
-                            <span><?php echo htmlspecialchars($studentData['class']); ?></span>
+                            <span class="info-label">Email:</span>
+                            <span><?php echo htmlspecialchars($studentData['email']); ?></span>
                         </div>
                     </div>
                     <div class="info-row">
                         <div class="info-item">
+                            <span class="info-label">Class:</span>
+                            <span><?php echo htmlspecialchars($studentData['class']); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Section:</span>
+                            <span><?php echo htmlspecialchars($studentData['section']); ?></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Exam:</span>
+                            <span><?php echo htmlspecialchars($examData['exam_name']); ?></span>
+                        </div>
+                        <div class="info-item">
                             <span class="info-label">Exam Period:</span>
-                            <span><?php echo htmlspecialchars($resultMonth . ' ' . $resultYear); ?></span>
+                            <span><?php echo htmlspecialchars(date('d M, Y', strtotime($examData['start_date']))) . ' - ' . 
+                                           htmlspecialchars(date('d M, Y', strtotime($examData['end_date']))); ?></span>
                         </div>
                     </div>
                 </div>
@@ -294,89 +380,88 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <table class="results-table">
                     <thead>
                         <tr>
+                            <th>Subject Code</th>
                             <th>Subject</th>
                             <th>Marks Obtained</th>
-                            <th>Total Marks</th>
+                            <th>Max Marks</th>
                             <th>Percentage</th>
                             <th>Grade</th>
-                            <th>Status</th>
+                            <th>Remarks</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php 
                         $totalObtained = 0;
-                        $totalMarks = 0;
+                        $totalMaxMarks = 0;
                         
                         while ($row = $resultData->fetch_assoc()): 
-                            $percentage = ($row['marks_obtained'] / $row['total_marks']) * 100;
+                            $percentage = ($row['marks_obtained'] / $row['marks_max']) * 100;
                             $totalObtained += $row['marks_obtained'];
-                            $totalMarks += $row['total_marks'];
-                            
-                            // Determine grade
-                            $grade = '';
-                            if ($percentage >= 90) {
-                                $grade = 'A+';
-                            } elseif ($percentage >= 80) {
-                                $grade = 'A';
-                            } elseif ($percentage >= 70) {
-                                $grade = 'B';
-                            } elseif ($percentage >= 60) {
-                                $grade = 'C';
-                            } elseif ($percentage >= 50) {
-                                $grade = 'D';
-                            } else {
-                                $grade = 'F';
-                            }
-                            
-                            // Determine status
-                            $status = ($percentage >= 40) ? 'Pass' : 'Fail';
+                            $totalMaxMarks += $row['marks_max'];
                         ?>
                         <tr>
+                            <td><?php echo htmlspecialchars($row['subject_code']); ?></td>
                             <td><?php echo htmlspecialchars($row['subject_name']); ?></td>
                             <td><?php echo htmlspecialchars($row['marks_obtained']); ?></td>
-                            <td><?php echo htmlspecialchars($row['total_marks']); ?></td>
+                            <td><?php echo htmlspecialchars($row['marks_max']); ?></td>
                             <td><?php echo number_format($percentage, 2) . '%'; ?></td>
-                            <td><?php echo $grade; ?></td>
-                            <td><?php echo $status; ?></td>
+                            <td><?php echo htmlspecialchars($row['grade']); ?></td>
+                            <td><?php echo htmlspecialchars($row['remarks'] ?? ''); ?></td>
                         </tr>
-                        <?php endwhile; 
+                        <?php endwhile; ?>
                         
-                        // Calculate overall percentage
-                        $overallPercentage = ($totalMarks > 0) ? ($totalObtained / $totalMarks) * 100 : 0;
-                        
-                        // Determine overall grade
-                        $overallGrade = '';
-                        if ($overallPercentage >= 90) {
-                            $overallGrade = 'A+';
-                        } elseif ($overallPercentage >= 80) {
-                            $overallGrade = 'A';
-                        } elseif ($overallPercentage >= 70) {
-                            $overallGrade = 'B';
-                        } elseif ($overallPercentage >= 60) {
-                            $overallGrade = 'C';
-                        } elseif ($overallPercentage >= 50) {
-                            $overallGrade = 'D';
-                        } else {
-                            $overallGrade = 'F';
-                        }
-                        
-                        // Determine overall status
-                        $overallStatus = ($overallPercentage >= 40) ? 'Pass' : 'Fail';
-                        ?>
+                        <!-- Overall Result Summary -->
                         <tr class="result-summary">
                             <td colspan="2"><strong>Overall Result</strong></td>
-                            <td><strong><?php echo $totalObtained . ' / ' . $totalMarks; ?></strong></td>
-                            <td><strong><?php echo number_format($overallPercentage, 2) . '%'; ?></strong></td>
-                            <td><strong><?php echo $overallGrade; ?></strong></td>
-                            <td><strong><?php echo $overallStatus; ?></strong></td>
+                            <td><strong><?php echo number_format($overallData['total_marks'], 2); ?></strong></td>
+                            <td><strong><?php echo number_format($overallData['total_max_marks'], 2); ?></strong></td>
+                            <td><strong><?php echo number_format($overallData['percentage'], 2) . '%'; ?></strong></td>
+                            <td><strong><?php echo htmlspecialchars($overallData['grade']); ?></strong></td>
+                            <td>
+                                <strong>
+                                    <?php 
+                                    $statusText = '';
+                                    switch($overallData['result_status']) {
+                                        case 'pass':
+                                            $statusText = 'PASSED';
+                                            break;
+                                        case 'fail':
+                                            $statusText = 'FAILED';
+                                            break;
+                                        case 'absent':
+                                            $statusText = 'ABSENT';
+                                            break;
+                                        default:
+                                            $statusText = 'PENDING';
+                                    }
+                                    echo $statusText; 
+                                    ?>
+                                </strong>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
                 
+                <?php if (!empty($overallData['remarks'])): ?>
+                <div class="remarks-section">
+                    <h4>Remarks:</h4>
+                    <p><?php echo nl2br(htmlspecialchars($overallData['remarks'])); ?></p>
+                </div>
+                <?php endif; ?>
+                
+                <?php if (!empty($overallData['rank'])): ?>
+                <div class="rank-section">
+                    <h4>Rank in Class: <?php echo htmlspecialchars($overallData['rank']); ?></h4>
+                </div>
+                <?php endif; ?>
+                
+                <div class="published-date">
+                    <p>Result published on: <?php echo date('d F, Y', strtotime($overallData['published_date'])); ?></p>
+                </div>
+                
                 <button onclick="window.print();" class="btn print-btn">Print Result</button>
             </section>
             <?php endif; ?>
-
             
         </main>
         
