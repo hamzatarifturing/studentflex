@@ -273,7 +273,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: bold;
         }
         
+        .failed-subject {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .failed-subject td {
+            border-color: #ef9a9a;
+        }
+        
         @media print {
+            .failed-subject {
+                background-color: #ffebee !important;
+                color: #c62828 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
             .search-section, .print-btn, header, footer {
                 display: none;
             }
@@ -382,7 +398,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 </form>
             </section>
-            
+            <!-- Real-time Clock -->
+<div>
+<span>
+<?php echo date('l, F d, Y'); ?>
+</span>
+<span>
+<?php echo date('h:i:s A'); ?>
+</span>
+</div>
+<script>
+// Update the clock every second
+function updateClock() {
+    var now = new Date();
+    
+    // Format date: Weekday, Month Day, Year
+    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    var dayName = days[now.getDay()];
+    var monthName = months[now.getMonth()];
+    var day = now.getDate();
+    var year = now.getFullYear();
+    
+    var dateString = dayName + ', ' + monthName + ' ' + day + ', ' + year;
+    
+    // Format time: Hours:Minutes:Seconds AM/PM
+    var hours = now.getHours();
+    var minutes = now.getMinutes();
+    var seconds = now.getSeconds();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Convert 0 to 12
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+    
+    var timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+    
+    // Update DOM elements
+    document.getElementById('current-date').textContent = dateString;
+    document.getElementById('current-time').textContent = timeString;
+    
+    // Call this function again in 1 second
+    setTimeout(updateClock, 1000);
+}
+
+// Start the clock
+window.onload = function() {
+    updateClock();
+};
+</script>
+
             <?php if ($showResults && $studentData && !empty($allExams)): ?>
             <section class="results-section" id="results">
                 <div class="student-info">
@@ -433,6 +500,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                     
                     <h4 style="margin-top: 15px;">Results</h4>
+                    <div class="info-note" style="margin-bottom: 10px; font-size: 0.9em; color: #666;">
+                        <span style="background-color: #ffebee; padding: 2px 5px; color: #c62828; border-radius: 3px;">Failed subjects</span> are highlighted in red.
+                    </div>
                     <table class="results-table">
                         <thead>
                             <tr>
@@ -446,11 +516,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php 
+                        <?php 
                             foreach ($examMarks as $row): 
                                 $percentage = ($row['marks_obtained'] / $row['marks_max']) * 100;
+                                // Check if grade is F or grade is lowercase 'f'
+                                $isFailed = (strtoupper($row['grade']) === 'F');
                             ?>
-                            <tr>
+                            <tr class="<?php echo $isFailed ? 'failed-subject' : ''; ?>">
                                 <td><?php echo htmlspecialchars($row['subject_code']); ?></td>
                                 <td><?php echo htmlspecialchars($row['subject_name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['marks_obtained']); ?></td>
@@ -459,6 +531,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <td><?php echo htmlspecialchars($row['grade']); ?></td>
                                 <td><?php echo htmlspecialchars(isset($row['remarks']) ? $row['remarks'] : ''); ?></td>
                             </tr>
+
                             <?php endforeach; ?>
                             
                             <!-- Overall Result Summary -->
