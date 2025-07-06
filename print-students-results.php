@@ -11,10 +11,21 @@ $showResults = false;
 
 // Process form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Get form data
-    $studentId = isset($_POST['studentId']) ? trim($_POST['studentId']) : '';
-    $resultMonth = isset($_POST['resultMonth']) ? trim($_POST['resultMonth']) : '';
-    $resultYear = isset($_POST['resultYear']) ? trim($_POST['resultYear']) : '';
+    // Get form data - PHP 5 compatible way
+    $studentId = '';
+    if (isset($_POST['studentId'])) {
+        $studentId = trim($_POST['studentId']);
+    }
+    
+    $resultMonth = '';
+    if (isset($_POST['resultMonth'])) {
+        $resultMonth = trim($_POST['resultMonth']);
+    }
+    
+    $resultYear = '';
+    if (isset($_POST['resultYear'])) {
+        $resultYear = trim($_POST['resultYear']);
+    }
     
     // Validate inputs
     if (empty($studentId) || empty($resultMonth) || empty($resultYear)) {
@@ -44,6 +55,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             $stmt = $conn->prepare($examQuery);
             $stmt->bind_param("sss", $monthNumber, $resultYear, $studentData['class']);
+
+
             $stmt->execute();
             $examResult = $stmt->get_result();
             
@@ -298,9 +311,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <?php endif; ?>
                 
                 <form id="resultSearchForm" method="post" action="">
-                    <div class="form-group">
+                <div class="form-group">
                         <label for="studentId">Student ID:</label>
-                        <input type="text" id="studentId" name="studentId" placeholder="Enter Student ID" required value="<?php echo isset($_POST['studentId']) ? htmlspecialchars($_POST['studentId']) : ''; ?>">
+                        <input type="text" id="studentId" name="studentId" placeholder="Enter Student ID" required value="<?php 
+                            if (isset($_POST['studentId'])) {
+                                echo htmlspecialchars($_POST['studentId']);
+                            } else {
+                                echo '';
+                            }
+                        ?>">
                     </div>
                     
                     <div class="form-group">
@@ -308,10 +327,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <select id="resultMonth" name="resultMonth" required>
                             <option value="">Select Month</option>
                             <?php
-                            $months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                            $months = array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
                             foreach ($months as $month) {
-                                $selected = (isset($_POST['resultMonth']) && $_POST['resultMonth'] == $month) ? 'selected' : '';
-                                echo "<option value=\"$month\" $selected>$month</option>";
+                                $selected = '';
+                                if (isset($_POST['resultMonth']) && $_POST['resultMonth'] == $month) {
+                                    $selected = 'selected';
+                                }
+                                echo "<option value=\"" . $month . "\" " . $selected . ">" . $month . "</option>";
                             }
                             ?>
                         </select>
@@ -322,14 +344,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <select id="resultYear" name="resultYear" required>
                             <option value="">Select Year</option>
                             <?php
-                            $years = ['2023', '2024', '2025'];
+                            $years = array('2023', '2024', '2025');
                             foreach ($years as $year) {
-                                $selected = (isset($_POST['resultYear']) && $_POST['resultYear'] == $year) ? 'selected' : '';
-                                echo "<option value=\"$year\" $selected>$year</option>";
+                                $selected = '';
+                                if (isset($_POST['resultYear']) && $_POST['resultYear'] == $year) {
+                                    $selected = 'selected';
+                                }
+                                echo "<option value=\"" . $year . "\" " . $selected . ">" . $year . "</option>";
                             }
+
                             ?>
                         </select>
                     </div>
+                    
+                
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Search Results</button>
@@ -398,6 +426,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $percentage = ($row['marks_obtained'] / $row['marks_max']) * 100;
                             $totalObtained += $row['marks_obtained'];
                             $totalMaxMarks += $row['marks_max'];
+                            $remarks = isset($row['remarks']) ? $row['remarks'] : '';
                         ?>
                         <tr>
                             <td><?php echo htmlspecialchars($row['subject_code']); ?></td>
@@ -406,7 +435,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <td><?php echo htmlspecialchars($row['marks_max']); ?></td>
                             <td><?php echo number_format($percentage, 2) . '%'; ?></td>
                             <td><?php echo htmlspecialchars($row['grade']); ?></td>
-                            <td><?php echo htmlspecialchars($row['remarks'] ?? ''); ?></td>
+                            <td><?php echo htmlspecialchars($remarks); ?></td>
                         </tr>
                         <?php endwhile; ?>
                         
@@ -442,14 +471,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </tbody>
                 </table>
                 
-                <?php if (!empty($overallData['remarks'])): ?>
+                <?php 
+                // PHP 5 compatible check for remarks
+                if (isset($overallData['remarks']) && !empty($overallData['remarks'])): 
+                ?>
                 <div class="remarks-section">
                     <h4>Remarks:</h4>
                     <p><?php echo nl2br(htmlspecialchars($overallData['remarks'])); ?></p>
                 </div>
                 <?php endif; ?>
                 
-                <?php if (!empty($overallData['rank'])): ?>
+                <?php 
+                // PHP 5 compatible check for rank
+                if (isset($overallData['rank']) && !empty($overallData['rank'])): 
+                ?>
                 <div class="rank-section">
                     <h4>Rank in Class: <?php echo htmlspecialchars($overallData['rank']); ?></h4>
                 </div>
