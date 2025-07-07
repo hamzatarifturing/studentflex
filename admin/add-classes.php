@@ -18,7 +18,7 @@ $page_title = "Manage Classes";
 <div class="row">
     <div class="col-md-12">
         <div class="card shadow mb-4">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
 <h6>
 <i class="fas fa-graduation-cap mr-2"></i>
 
@@ -26,13 +26,143 @@ $page_title = "Manage Classes";
 </h6>
 </div>
 <div>
-                <!-- Content will be implemented in future interactions -->
-                <div class="alert alert-info">
+                <!-- Add Class Form -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <form method="post" action="" id="add-class-form">
+                            <div class="form-group">
+<label>
+<strong>
+Class Code*
+
+</strong>
+</label>
+                                <input type="text" class="form-control" id="class_code" name="class_code" 
+                                       placeholder="Enter unique class code (e.g., CLASS10)" required>
+<small>
+Unique identifier for the class (e.g., CLASS10, 12SCIENCE)
+
+</small>
+</div>
+<div>
+<label>
+<strong>
+Class Name*
+
+</strong>
+</label>
+                                <input type="text" class="form-control" id="class_name" name="class_name" 
+                                       placeholder="Enter class name" required>
+<small>
+Full name of the class (e.g., Class 10, 12th Science)
+
+</small>
+</div>
+<div>
+<label>
+<strong>
+Description
+
+</strong>
+</label>
+<textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter class description"></textarea>
+<small>
+Optional details about the class
+
+</small>
+</div>
+<div>
+<label>
+<strong>
+Status*
+
+</strong>
+</label>
+                                <div class="custom-control custom-radio">
+                                    <input type="radio" id="status_active" name="is_active" 
+                                           class="custom-control-input" value="yes" checked>
+<label>
+Active
+
+</label>
+</div>
+<div>
+                                    <input type="radio" id="status_inactive" name="is_active" 
+                                           class="custom-control-input" value="no">
+<label>
+Inactive
+
+</label>
+</div>
+<small>
+Set the current status of the class
+
+</small>
+                            </div>
+<div>
+<button>
+<i class="fas fa-plus-circle mr-2"></i>
+
+Add Class
+
+</button>
+<button>
+<i class="fas fa-redo mr-2"></i>
+
+Reset
+
+</button>
+</div>
+                        </form>
+                    </div>
+<div>
+                        <div class="alert alert-info">
+<h5>
 <i class="fas fa-info-circle mr-2"></i>
 
-Class management functionality will be implemented in upcoming updates.
+Adding Classes
 
+</h5>
+                            <hr>
+<p>
+Classes are used to organize students and subjects into specific grade levels or groups.
+
+</p>
+<ul>
+<li>
+Each class must have a unique
+
+<strong>
+Class Code
+
+</strong>
+</li>
+<li>
+Provide a descriptive
+
+<strong>
+Class Name
+
+</strong>
+for easier identification
+
+</li>
+<li>
+You can add an optional description with additional details
+
+</li>
+<li>
+Set the status as active or inactive as needed
+
+</li>
+</ul>
+<p>
+Once created, you can assign students and subjects to these classes.
+
+</p>
 </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
