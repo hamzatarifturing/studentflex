@@ -106,10 +106,10 @@ $result = mysqli_query($conn, $query);
                                             <td><?php echo $description; ?></td>
                                             <td><span class="badge badge-<?php echo $statusClass; ?>"><?php echo $status; ?></span></td>
                                             <td>
-                                                <form method="post" action="" class="d-inline">
+                                                <form method="post" action="" class="d-inline" id="form-class-<?php echo $row['id']; ?>">
                                                     <input type="hidden" name="class_id" value="<?php echo $row['id']; ?>">
                                                     <?php if($row['is_active'] == 'yes'): ?>
-                                                        <button type="submit" name="deactivate_class" class="btn btn-sm btn-danger">
+                                                        <button type="button" onclick="confirmDeactivation(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['class_name']); ?>')" class="btn btn-sm btn-danger">
                                                             <i class="fas fa-times-circle mr-1"></i> Deactivate
                                                         </button>
                                                     <?php else: ?>
@@ -138,7 +138,21 @@ $result = mysqli_query($conn, $query);
         </div>
     </div>
 </div>
-
+<!-- JavaScript for confirmation dialog -->
+<script type="text/javascript">
+function confirmDeactivation(classId, className) {
+    if (confirm("Are you sure you want to deactivate the class '" + className + "'?\n\nStudents may lose access to this class.")) {
+        // If confirmed, add the deactivate_class name to a hidden input and submit the form
+        var form = document.getElementById('form-class-' + classId);
+        var hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'deactivate_class';
+        hiddenInput.value = '1';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
+</script>
 <?php
 // Include footer
 require_once '../includes/footer.php';
