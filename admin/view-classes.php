@@ -11,6 +11,10 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
 
 // Page title
 $page_title = "Manage Classes";
+
+// Fetch all classes from database
+$query = "SELECT * FROM classes ORDER BY class_name ASC";
+$result = mysqli_query($conn, $query);
 ?>
 
 <!-- Main Content -->
@@ -32,12 +36,78 @@ Add New Class
 </a>
 </div>
 <div>
-                <!-- Class list will be displayed here in future implementations -->
-                <div class="alert alert-info">
-<i class="fas fa-info-circle mr-2"></i>
+                <div class="table-responsive">
+<table>
+<thead>
+<tr>
+<th>
+ID
 
-This page will display the list of classes. Implementation coming soon.
+</th>
+<th>
+Class Code
 
+</th>
+<th>
+Class Name
+
+</th>
+<th>
+Description
+
+</th>
+<th>
+Status
+
+</th>
+</tr>
+</thead>
+<tbody>
+                            <?php
+                            if (mysqli_num_rows($result) > 0) {
+                                while ($row = mysqli_fetch_assoc($result)) {
+                                    $status = ($row['is_active'] == 'yes') ? 'Active' : 'Inactive';
+                                    $statusClass = ($row['is_active'] == 'yes') ? 'success' : 'danger';
+                                    ?>
+<tr>
+<td>
+<?php echo $row['id']; ?>
+</td>
+<td>
+<?php echo htmlspecialchars($row['class_code']); ?>
+</td>
+<td>
+<?php echo htmlspecialchars($row['class_name']); ?>
+</td>
+<td>
+<?php echo htmlspecialchars($row['description'] ?? 'No description available'); ?>
+</td>
+<td>
+<span>
+"><?php echo $status; ?>
+
+</span>
+</td>
+</tr>
+                                    <?php
+                                }
+                            } else {
+                                ?>
+<tr>
+<td>
+No classes found.
+
+<a>
+Add a class
+
+</a>
+</td>
+</tr>
+                                <?php
+                            }
+                            ?>
+</tbody>
+</table>
 </div>
             </div>
         </div>
