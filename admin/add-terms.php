@@ -11,10 +11,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
 
 // Page title
 $page_title = "Manage Terms";
-
-// Fetch all classes for the dropdown
-$classes_query = "SELECT * FROM classes WHERE is_active = 'yes' ORDER BY class_name ASC";
-$classes_result = mysqli_query($conn, $classes_query);
 ?>
 
 <!-- Main Content -->
@@ -159,8 +155,7 @@ Reset
         </div>
     </div>
 </div>
-</div> <?php // Include footer 
-require_once '../includes/footer.php'; ?>
+</div> <?php // Include footer require_once '../includes/footer.php'; ?>
 <script>
 // Client-side validation
 document.getElementById('add-term-form').addEventListener('submit', function(e) {
