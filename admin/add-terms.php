@@ -11,8 +11,65 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['role'] !== 'admin') {
 
 // Page title
 $page_title = "Manage Terms";
-?>
 
+// Initialize variables to store messages
+$success_message = '';
+$error_message = '';
+
+// Process form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
+    // Get form data
+    $term_name = isset($_POST['term_name']) ? mysqli_real_escape_string($conn, trim($_POST['term_name'])) : '';
+    $term_code = isset($_POST['term_code']) ? mysqli_real_escape_string($conn, trim($_POST['term_code'])) : '';
+    $start_date = isset($_POST['start_date']) ? mysqli_real_escape_string($conn, trim($_POST['start_date'])) : '';
+    $end_date = isset($_POST['end_date']) ? mysqli_real_escape_string($conn, trim($_POST['end_date'])) : '';
+    $academic_year = isset($_POST['academic_year']) ? mysqli_real_escape_string($conn, trim($_POST['academic_year'])) : '';
+    $description = isset($_POST['description']) ? mysqli_real_escape_string($conn, trim($_POST['description'])) : '';
+    
+    // Set checkbox values (if not checked, they won't be in the POST array)
+    $is_current = isset($_POST['is_current']) && $_POST['is_current'] == 'yes' ? 'yes' : 'no';
+    $is_active = isset($_POST['is_active']) && $_POST['is_active'] == 'yes' ? 'yes' : 'no';
+    
+    // Validate required fields
+    if (empty($term_name) || empty($term_code) || empty($start_date) || empty($end_date) || empty($academic_year)) {
+        $error_message = "All required fields must be filled out";
+    } else {
+        // Check if term code already exists
+        $check_query = "SELECT * FROM terms WHERE term_code = '$term_code'";
+        $check_result = mysqli_query($conn, $check_query);
+        
+        if (mysqli_num_rows($check_result) > 0) {
+            $error_message = "Term code '$term_code' already exists. Please use a different code.";
+        } else {
+            // If this is set as current term, update all other terms to not current
+            if ($is_current == 'yes') {
+                $update_query = "UPDATE terms SET is_current = 'no'";
+                mysqli_query($conn, $update_query);
+            }
+            
+            // Insert new term
+            $insert_query = "INSERT INTO terms (term_name, term_code, start_date, end_date, academic_year, is_current, is_active, description) 
+                          VALUES ('$term_name', '$term_code', '$start_date', '$end_date', '$academic_year', '$is_current', '$is_active', '$description')";
+            
+            if (mysqli_query($conn, $insert_query)) {
+                $success_message = "Term '$term_name' has been added successfully";
+                
+                // Reset form fields after successful submission
+                $term_name = '';
+                $term_code = '';
+                $start_date = '';
+                $end_date = '';
+                $academic_year = '';
+                $description = '';
+                $is_current = '';
+                $is_active = '';
+            } else {
+                $error_message = "Error: " . mysqli_error($conn);
+            }
+        }
+    }
+}
+?>
 <!-- Main Content -->
 <div class="container-fluid">
     <div class="row">
@@ -26,6 +83,18 @@ $page_title = "Manage Terms";
                         <i class="fas fa-list mr-1"></i> View All Terms
                     </a>
                 </div>
+                <?php if (!empty($success_message)): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo $success_message; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($error_message)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo $error_message; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
                 <div class="card-body">
                     <form action="" method="POST" id="add-term-form">
                         <div class="row">
