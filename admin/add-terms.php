@@ -16,6 +16,11 @@ $page_title = "Manage Terms";
 $success_message = '';
 $error_message = '';
 
+// Set current academic year (e.g., "2025-2026")
+$current_year = date("Y");
+$next_year = date("Y") + 1;
+$academic_year = $current_year . "-" . $next_year;
+
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
     // Get form data
@@ -23,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
     $term_code = isset($_POST['term_code']) ? mysqli_real_escape_string($conn, trim($_POST['term_code'])) : '';
     $start_date = isset($_POST['start_date']) ? mysqli_real_escape_string($conn, trim($_POST['start_date'])) : '';
     $end_date = isset($_POST['end_date']) ? mysqli_real_escape_string($conn, trim($_POST['end_date'])) : '';
-    $academic_year = isset($_POST['academic_year']) ? mysqli_real_escape_string($conn, trim($_POST['academic_year'])) : '';
+    // Use the hard-coded academic year value instead of form field
     $description = isset($_POST['description']) ? mysqli_real_escape_string($conn, trim($_POST['description'])) : '';
     
     // Set checkbox values (if not checked, they won't be in the POST array)
@@ -31,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
     $is_active = isset($_POST['is_active']) && $_POST['is_active'] == 'yes' ? 'yes' : 'no';
     
     // Validate required fields
-    if (empty($term_name) || empty($term_code) || empty($start_date) || empty($end_date) || empty($academic_year)) {
+    if (empty($term_name) || empty($term_code) || empty($start_date) || empty($end_date)) {
         $error_message = "All required fields must be filled out";
     } else {
         // Check if term code already exists
@@ -59,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
                 $term_code = '';
                 $start_date = '';
                 $end_date = '';
-                $academic_year = '';
                 $description = '';
                 $is_current = '';
                 $is_active = '';
@@ -132,7 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_term'])) {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="academic_year">Academic Year <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="academic_year" name="academic_year" required placeholder="e.g., 2025-2026">
+                                    <input type="text" class="form-control" id="academic_year" name="academic_year" 
+                                    value="<?php echo $academic_year; ?>" readonly disabled>
                                 </div>
                             </div>
                             <div class="col-md-6">
